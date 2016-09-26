@@ -1,0 +1,45 @@
+#!/bin/bash
+set -e
+
+./install_dependencies.sh
+
+export current_dir="$(pwd)"
+
+
+if [ ! -e ${current_dir}/scripts/heartbeat.sh ] ; then
+  print "heartbeat.sh not found"
+  exit 1
+fi
+
+touch ${current_dir}/alive
+
+set -x
+#mkdir -p /etc/supervisor/conf.d/
+mkdir -p /var/log/waggle/
+
+#ln -sf ${current_dir}/supervisor/heartbeat.conf /etc/supervisor/conf.d/heartbeat.conf
+rm -f /etc/supervisor/conf.d/heartbeat.conf
+
+# copy upstart scripts
+cp ${current_dir}/upstart/waggle-* /etc/init/
+rm -f ${current_dir}/upstart/waggle_*
+
+ln -sf ${current_dir}/scripts/waggle-service.py /usr/bin/waggle-service
+cp ${current_dir}/bash_completion/waggle-service /etc/bash_completion.d/
+
+
+cd ${current_dir}/device_rules/atmel_boards
+./install.sh
+
+
+cd ${current_dir}/device_rules/wwan_modems
+./install.sh
+
+set +x
+
+echo "run: udevadm control --reload-rules"
+echo "     udevadm trigger --subsystem-match=tty --action=add"
+echo ""
+echo "done"
+
+
