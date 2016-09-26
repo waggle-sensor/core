@@ -1,8 +1,85 @@
+#!/bin/bash
+
+set -x
+set -e
+
+###locale
+locale-gen "en_US.UTF-8"
+dpkg-reconfigure locales
+
+### timezone 
+echo "Etc/UTC" > /etc/timezone 
+dpkg-reconfigure --frontend noninteractive tzdata
+
+# because of "Failed to fetch http://ports.ubuntu.com/... ...Hash Sum mismatch"
+#rm -rf /var/lib/apt/lists/*
+touch -t 1501010000 /var/lib/apt/lists/*
+rm -f /var/lib/apt/lists/partial/*
+apt-get clean
+apt-key update
+apt-get update
+apt-get autoclean
+apt-get autoremove -y
+
+# disable software update and new release checks and messages
+# (don't want the node connecting to anything other than the beehive server)
+apt-get remove --yes update-manager-core
+apt-get remove --yes ubuntu-release-upgrader-core
+cat /etc/pam.d/sshd | sed 's/^\(..*pam_motd..*\)/# \1/' > /tmp/sshd
+mv /tmp/sshd /etc/pam.d/sshd
+
+mkdir -p /etc/waggle/
+echo "10.31.81.10" > /etc/waggle/node_controller_host
+
+set -e
+
+# make sure serial console requires password
+sed -i -e 's:exec /bin/login -f root:exec /bin/login:' /bin/auto-root-login
+
+# Restrict SSH connections to local port bindings
+sed -i 's/^#ListenAddress ::$/ListenAddress 127.0.0.1/' /etc/ssh/sshd_config
+
+
+
+### Odroid Model-Specific Configuration ###
+model=$(detect_odroid_model.sh)
+if [ "x${model}" == "xC" ]; then
+  # this will make sure that an empty eMMC card will get the waggle image
+  touch /root/do_recovery
+
+  echo -e "10.31.81.51\textensionnode1 extensionnode" >> /etc/hosts
+  for i in 2 3 4 5 ; do
+    echo -e "10.31.81.5${i}\textensionnode${i}" >> /etc/hosts
+  done
+
+  echo -e "127.0.0.1\tnodecontroller" >> /etc/hosts
+
+  # Restrict SSH connections to local port bindings and ethernet card subnet
+  sed -i 's/^#ListenAddress 0.0.0.0$/ListenAddress 10.31.81.10/' /etc/ssh/sshd_config 
+
+  set +e
+
+elif [ "x${model}" == "xXU3" ]; then
+  echo -e "10.31.81.10\tnodecontroller" >> /etc/hosts
+
+  apt-get --no-install-recommends install -y network-manager
+
+  # Restrict SSH connections to local port bindings and ethernet card subnet
+  sed -i 's/^#ListenAddress 0.0.0.0$/ListenAddress 10.31.81.51/' /etc/ssh/sshd_config 
+
+
+  mkdir -p /usr/lib/waggle/
+  cd /usr/lib/waggle/
+else
+  echo "Unrecognized Odroid model \"${mode}\""
+fi
+###########################################
+
+
+
 ### kill X processses
 set +e
 killall -u lightdm -9
-
-
 
 ### username
 export odroid_exists=$(id -u odroid > /dev/null 2>&1; echo $?)

@@ -53,7 +53,7 @@ echo ""
 echo "TIME_LOW  : ${TIME_LOW}"
 echo "TIME_HIGH : ${TIME_HIGH}"
 
-ALIVE_FILE=/usr/lib/waggle/waggle_image/alive
+ALIVE_FILE=/usr/lib/waggle/core/alive
 touch ${ALIVE_FILE}
 
 # Check if the current device is a C1+ or XU4. 

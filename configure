@@ -1,10 +1,12 @@
 #!/bin/bash
 set -e
 
-./install_dependencies.sh
-
 export current_dir="$(pwd)"
 
+if "x${1}" == "x--system"; then
+  ./scripts/configure-system.sh
+  cd $current_dir
+fi
 
 if [ ! -e ${current_dir}/scripts/heartbeat.sh ] ; then
   print "heartbeat.sh not found"
