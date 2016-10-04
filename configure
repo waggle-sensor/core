@@ -29,14 +29,6 @@ rm -f ${current_dir}/upstart/waggle_*
 ln -sf ${current_dir}/scripts/waggle-service.py /usr/bin/waggle-service
 cp ${current_dir}/bash_completion/waggle-service /etc/bash_completion.d/
 
-
-cd ${current_dir}/device_rules/atmel_boards
-./install.sh
-
-
-cd ${current_dir}/device_rules/wwan_modems
-./install.sh
-
 set +x
 
 echo "run: udevadm control --reload-rules"
