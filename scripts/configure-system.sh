@@ -146,8 +146,8 @@ if [ ! -e '/home/waggle/.ssh' ]; then
   mkdir /home/waggle/.ssh
 fi
 chmod 700 /home/waggle/.ssh/
-chmod 600 /home/waggle/.ssh/authorized_keys
 touch /home/waggle/.ssh/authorized_keys
+chmod 600 /home/waggle/.ssh/authorized_keys
 chown waggle:waggle /home/waggle/.ssh/ /home/waggle/.ssh/authorized_keys
 
 ### mark image for first boot 
