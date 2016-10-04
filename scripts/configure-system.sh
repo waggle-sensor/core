@@ -142,6 +142,9 @@ fi
 ### Remove ssh host files. Those will be recreated by the /etc/rc.local script by default.
 rm -f /etc/ssh/ssh_host*
 
+if [ ! -e '/home/waggle/.ssh' ]; then
+  mkdir /home/waggle/.ssh
+fi
 chmod 700 /home/waggle/.ssh/
 chmod 600 /home/waggle/.ssh/authorized_keys
 touch /home/waggle/.ssh/authorized_keys
