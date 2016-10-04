@@ -4,6 +4,7 @@ set -e
 export current_dir="$(pwd)"
 
 if "x${1}" == "x--system"; then
+  echo "configuring system..."
   ./scripts/configure-system.sh
   cd $current_dir
 fi
