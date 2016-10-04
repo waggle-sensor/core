@@ -51,8 +51,4 @@ echo "     udevadm trigger --subsystem-match=tty --action=add"
 echo ""
 echo "done"
 
-# python 2 dependencies
-pip install tabulate
-
-# python 3 dependencies
-pip3 install tabulate
+${current_dir}/scripts/install_dependencies.sh
