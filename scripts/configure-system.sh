@@ -156,7 +156,7 @@ touch /root/first_boot
 touch /root/do_resize
 
 
-rm -f /etc/network/interfaces.d/*
+#rm -f /etc/network/interfaces.d/*
 rm -f /etc/udev/rules.d/70-persistent-net.rules 
 
 ### for paranoids
