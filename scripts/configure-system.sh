@@ -131,11 +131,13 @@ sed -i 's/^\(PermitRootLogin\) .*/\1 no/' /etc/ssh/sshd_config
 ### default password
 echo waggle:waggle | chpasswd
 
-aot_config_key=/root/id_rsa_waggle_aot_config
-waggle_password_file=/root/encrypted_waggle_password
-if [ -e ${waggle_password_file} ]; then
-  echo root:$(openssl rsautl -decrypt -inkey ${aot_config_key} -in ${waggle_password_file}) | chpasswd
+aot_root_shadow_file=/root/root_shadow
+if [ -e ${aot_root_shadow_file} ]; then
+  ### AoT password
+  aot_root_shadow_entry=$(cat /root/root_shadow)
+  sed -i -e 's/^root:..*/${aot_root_shadow_entry}/' /etc/shadow
 else
+  ### default password
   echo root:waggle | chpasswd
 fi
 
