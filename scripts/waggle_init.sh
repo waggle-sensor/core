@@ -284,7 +284,7 @@ fi
 #
 # create Node ID
 #
-/usr/lib/waggle/core/scripts_create_node_id.sh
+/usr/lib/waggle/core/scripts/create_node_id.sh
 
 #
 # create recovery files for partitions

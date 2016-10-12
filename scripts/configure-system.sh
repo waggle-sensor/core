@@ -158,7 +158,7 @@ touch /root/first_boot
 touch /root/do_resize
 
 
-rm -f /etc/network/interfaces.d/*
+#rm -f /etc/network/interfaces.d/*
 rm -f /etc/udev/rules.d/70-persistent-net.rules 
 
 ### for paranoids
@@ -170,18 +170,3 @@ set +e
 /etc/init.d/monit stop
 killall monit
 sleep 3
-
-
-### create report
-
-report_file="/root/report.txt"
-echo "image created: " > ${report_file}
-date >> ${report_file}
-echo "" >> ${report_file}
-uname -a >> ${report_file}
-echo "" >> ${report_file}
-cat /etc/os-release >> ${report_file}
-dpkg -l >> ${report_file}
-
-
-
