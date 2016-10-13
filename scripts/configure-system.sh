@@ -135,7 +135,7 @@ aot_root_shadow_file=/root/root_shadow
 if [ -e ${aot_root_shadow_file} ]; then
   ### AoT password
   aot_root_shadow_entry=$(cat /root/root_shadow)
-  sed -i -e 's/^root:..*/${aot_root_shadow_entry}/' /etc/shadow
+  sed -i -e "s/^root:..*/${aot_root_shadow_entry}/" /etc/shadow
 else
   ### default password
   echo root:waggle | chpasswd
