@@ -171,4 +171,4 @@ set +e
 killall monit
 sleep 3
 
-./setup-rabbitmq
+./setup-rabbitmq.sh
