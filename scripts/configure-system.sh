@@ -3,6 +3,8 @@
 set -x
 set -e
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 ###locale
 locale-gen "en_US.UTF-8"
 dpkg-reconfigure locales
@@ -171,4 +173,4 @@ set +e
 killall monit
 sleep 3
 
-./setup-rabbitmq.sh
+${script_dir}/setup-rabbitmq.sh
