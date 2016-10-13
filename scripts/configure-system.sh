@@ -7,8 +7,8 @@ set -e
 locale-gen "en_US.UTF-8"
 dpkg-reconfigure locales
 
-### timezone 
-echo "Etc/UTC" > /etc/timezone 
+### timezone
+echo "Etc/UTC" > /etc/timezone
 dpkg-reconfigure --frontend noninteractive tzdata
 
 # because of "Failed to fetch http://ports.ubuntu.com/... ...Hash Sum mismatch"
@@ -71,10 +71,10 @@ fi
 
 # create new user waggle
 if [ ${odroid_exists} != 0 ] && [ ${waggle_exists} != 0 ] ; then
-  
-  
+
+
   set -e
-  
+
   adduser --disabled-password --gecos "" waggle
 
   # real name
@@ -88,20 +88,20 @@ fi
 # verify waggle user has been created
 set +e
 id -u waggle > /dev/null 2>&1
-if [ $? -ne 0 ]; then 
+if [ $? -ne 0 ]; then
   echo "error: user \"waggle\" was not created"
-  exit 1 
+  exit 1
 fi
 
 
 # check if odroid group exists
 getent group odroid > /dev/null 2>&1
-if [ $? -eq 0 ]; then 
+if [ $? -eq 0 ]; then
   echo "\"odroid\" group exists, will rename it to \"waggle\""
-  groupmod -n waggle odroid || exit 1 
+  groupmod -n waggle odroid || exit 1
 else
-  getent group waggle > /dev/null 2>&1 
-  if [ $? -eq 0 ]; then 
+  getent group waggle > /dev/null 2>&1
+  if [ $? -eq 0 ]; then
     echo "Neither \"waggle\" nor \"odroid\" group exists. Will create \"waggle\" group."
     addgroup waggle
   fi
@@ -110,10 +110,10 @@ fi
 
 
 # verify waggle group has been created
-getent group waggle > /dev/null 2>&1 
-if [ $? -ne 0 ]; then 
+getent group waggle > /dev/null 2>&1
+if [ $? -ne 0 ]; then
   echo "error: group \"waggle\" was not created"
-  exit 1 
+  exit 1
 fi
 
 echo "adding user \"waggle\" to group \"waggle\""
@@ -152,14 +152,14 @@ touch /home/waggle/.ssh/authorized_keys
 chmod 600 /home/waggle/.ssh/authorized_keys
 chown waggle:waggle /home/waggle/.ssh/ /home/waggle/.ssh/authorized_keys
 
-### mark image for first boot 
+### mark image for first boot
 
 touch /root/first_boot
 touch /root/do_resize
 
 
 #rm -f /etc/network/interfaces.d/*
-rm -f /etc/udev/rules.d/70-persistent-net.rules 
+rm -f /etc/udev/rules.d/70-persistent-net.rules
 
 ### for paranoids
 echo > /root/.bash_history
@@ -170,3 +170,5 @@ set +e
 /etc/init.d/monit stop
 killall monit
 sleep 3
+
+./setup-rabbitmq
