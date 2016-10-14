@@ -6,8 +6,9 @@ set -e
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ###locale
-locale-gen "en_US.UTF-8"
-dpkg-reconfigure locales
+locale-gen --purge "en_US.UTF-8"
+#dpkg-reconfigure locales
+echo -e 'LANG="en_US.UTF-8"\nLANGUAGE="en_US:en"\n' > /etc/default/locale
 
 ### timezone
 echo "Etc/UTC" > /etc/timezone
