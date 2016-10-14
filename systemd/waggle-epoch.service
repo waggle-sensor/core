@@ -1,0 +1,11 @@
+[Unit]
+Description=Maintains the date and time on the node.
+
+[Service]
+ExecStart=/usr/lib/waggle/core/scripts/waggle_epoch.sh
+
+Restart=Always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
