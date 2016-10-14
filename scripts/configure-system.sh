@@ -37,7 +37,7 @@ echo "10.31.81.10" > /etc/waggle/node_controller_host
 set -e
 
 # make sure serial console requires password
-sed -i -e 's:exec /bin/login -f root:exec /bin/login:' /bin/auto-root-login
+#sed -i -e 's:exec /bin/login -f root:exec /bin/login:' /bin/auto-root-login
 
 # Restrict SSH connections to local port bindings
 sed -i 's/^#ListenAddress ::$/ListenAddress 127.0.0.1/' /etc/ssh/sshd_config
