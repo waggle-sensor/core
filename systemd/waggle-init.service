@@ -1,0 +1,9 @@
+[Unit]
+Description=Initializes Waggle system.
+
+[Service]
+WorkingDirectory=/usr/lib/waggle/waggle_image/
+ExecStart=/usr/lib/waggle/waggle_image/scripts/waggle_init.sh force
+
+[Install]
+WantedBy=multi-user.target

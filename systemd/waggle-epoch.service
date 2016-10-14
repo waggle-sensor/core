@@ -1,5 +1,6 @@
 [Unit]
 Description=Maintains the date and time on the node.
+After=network.target
 
 [Service]
 ExecStart=/usr/lib/waggle/core/scripts/waggle_epoch.sh
