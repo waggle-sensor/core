@@ -22,35 +22,14 @@ export NODE_ID=""
 
 
 
-# try MAC address (some older models do not have unique MAC addresses)
+. /usr/lib/waggle/core/scripts/detect_mac_address.sh
+echo "MAC_ADDRESS: ${MAC_ADDRESS}"
 
-
-# try to detect network device, e.g. "eth0"
-#export NETWORK_DEVICE=$(ifconfig -a | grep "Ethernet" | grep "^eth" | sort | head -n 1 | grep -o "^eth[0-9]" | tr -d '\n')
-export NETWORK_DEVICE="eth0"
-echo "NETWORK_DEVICE: ${NETWORK_DEVICE}"
-
-
-# wait for network device
-while [ $( ifconfig ${NETWORK_DEVICE} > /dev/null 2>&1  ; echo $? ) -ne 0 ] ; do
-  echo "device ${NETWORK_DEVICE} not found, retry in a few seconds"
-  sleep 3
-done
-
-export MACADDRESS="" 
-# wait for successful read
-while [ "${MACADDRESS}x" == "x"  ] ; do
-  MACADDRESS=`ifconfig ${NETWORK_DEVICE} | head -n 1 | grep -o "[[:xdigit:]:]\{17\}" | sed 's/://g'`
-  sleep 3
-done
-
-echo "MACADDRESS: ${MACADDRESS}"
-
-if [ ! ${#MACADDRESS} -ge 12 ]; then
+if [ ! ${#MAC_ADDRESS} -ge 12 ]; then
   echo "error: could not extract MAC address"
   exit 1
 else
-  NODE_ID="0000${MACADDRESS}"  
+  NODE_ID="0000${MAC_ADDRESS}"  
 fi
 
 # try memory card serial number
