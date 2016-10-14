@@ -39,6 +39,11 @@ set -e
 # make sure serial console requires password
 #sed -i -e 's:exec /bin/login -f root:exec /bin/login:' /bin/auto-root-login
 
+sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/networking.service
+sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/ifup@.service
+systemctl disable apt-daily.timer
+systemctl disable unattended-upgrades.service
+
 # Restrict SSH connections to local port bindings
 sed -i 's/^#ListenAddress ::$/ListenAddress 127.0.0.1/' /etc/ssh/sshd_config
 
