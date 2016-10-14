@@ -1,0 +1,12 @@
+[Unit]
+Description=Triggers Wagman heartbeat line.
+
+[Service]
+WorkingDirectory=/usr/lib/waggle/waggle_image/scripts
+ExecStart=/usr/lib/waggle/waggle_image/scripts/heartbeat.sh
+
+Restart=Always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
