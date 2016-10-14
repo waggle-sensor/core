@@ -24,8 +24,6 @@ apt-get update
 apt-get autoclean
 apt-get autoremove -y
 
-apt-get install -y htop iotop iftop bwm-ng screen git python-dev python-pip python3-dev python3-pip tree psmisc dosfstools parted bash-completion fswebcam v4l-utils network-manager usbutils
-
 # disable software update and new release checks and messages
 # (don't want the node connecting to anything other than the beehive server)
 apt-get remove --yes update-manager-core
