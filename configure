@@ -42,6 +42,10 @@ rm -f /etc/supervisor/conf.d/heartbeat.conf
 
 # copy systemd scripts
 cp ${current_dir}/systemd/waggle-* /etc/systemd/system
+systemctl enable waggle-epoch.service
+systemctl enable waggle-heartbeat.service
+systemctl enable waggle-init.service
+
 
 ln -sf ${current_dir}/scripts/waggle-service.py /usr/bin/waggle-service
 cp ${current_dir}/bash_completion/waggle-service /etc/bash_completion.d/
