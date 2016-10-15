@@ -160,15 +160,6 @@ touch /home/waggle/.ssh/authorized_keys
 chmod 600 /home/waggle/.ssh/authorized_keys
 chown waggle:waggle /home/waggle/.ssh/ /home/waggle/.ssh/authorized_keys
 
-### mark image for first boot
-
-touch /root/first_boot
-touch /root/do_resize
-
-
-#rm -f /etc/network/interfaces.d/*
-rm -f /etc/udev/rules.d/70-persistent-net.rules
-
 ### for paranoids
 echo > /root/.bash_history
 echo > /home/waggle/.bash_history
