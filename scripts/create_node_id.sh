@@ -23,13 +23,12 @@ export NODE_ID=""
 
 
 . /usr/lib/waggle/core/scripts/detect_mac_address.sh
-echo "MAC_ADDRESS: ${MAC_ADDRESS}"
 
-if [ ! ${#MAC_ADDRESS} -ge 12 ]; then
+if [ ! ${#MAC_STRING} -ge 12 ]; then
   echo "error: could not extract MAC address"
   exit 1
 else
-  NODE_ID="0000${MAC_ADDRESS}"  
+  NODE_ID="0000${MAC_STRING}"  
 fi
 
 # try memory card serial number
@@ -46,20 +45,17 @@ if [ "${NODE_ID}x" == "x" ] && [ -e ${CID_FILE} ]; then
   fi
 fi
 
-
-echo "NODE_ID: ${NODE_ID}"
-
 # try random number
 if [ "${NODE_ID}x" = "x" ] ; then
   NODE_ID=`openssl rand -hex 8`
 fi
 
-echo "NODE_ID: ${NODE_ID}"
-
 if [ "${NODE_ID}x" = "x" ] ; then
   echo "could not generate NODE_ID"
   exit 1
 fi
+
+echo "NODE_ID: ${NODE_ID}"
 
 #save node ID
 mkdir -p /etc/waggle/

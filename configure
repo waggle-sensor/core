@@ -38,8 +38,10 @@ mkdir -p /var/log/waggle/
 rm -f /etc/supervisor/conf.d/heartbeat.conf
 
 # copy upstart scripts
-cp ${current_dir}/upstart/waggle-* /etc/init/
-rm -f ${current_dir}/upstart/waggle_*
+#cp ${current_dir}/upstart/waggle-* /etc/init/
+
+# copy systemd scripts
+cp ${current_dir}/systemd/waggle-* /etc/systemd/user
 
 ln -sf ${current_dir}/scripts/waggle-service.py /usr/bin/waggle-service
 cp ${current_dir}/bash_completion/waggle-service /etc/bash_completion.d/
