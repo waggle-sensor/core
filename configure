@@ -41,7 +41,7 @@ rm -f /etc/supervisor/conf.d/heartbeat.conf
 #cp ${current_dir}/upstart/waggle-* /etc/init/
 
 # copy systemd scripts
-cp ${current_dir}/systemd/waggle-* /etc/systemd/user
+cp ${current_dir}/systemd/waggle-* /etc/systemd/system
 
 ln -sf ${current_dir}/scripts/waggle-service.py /usr/bin/waggle-service
 cp ${current_dir}/bash_completion/waggle-service /etc/bash_completion.d/
