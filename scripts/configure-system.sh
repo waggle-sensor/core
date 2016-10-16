@@ -40,7 +40,7 @@ set -e
 #sed -i -e 's:exec /bin/login -f root:exec /bin/login:' /bin/auto-root-login
 
 # Change the resize.log location since we delete the odroid user
-device_line='device=$(df | grep "/$" | awk "{print \$1}" | sed "s/p2//")'
+device_line='device=$(df | grep \'/$\' | awk \'{print \$1}\' | sed \'s/p2//\')'
 sed -i -e 's:/home/odroid/resize.log:/root/resize.log:' \
        -e "s:\(    start)\):\1\n\t\t${device_line}:" \
        -e 's:mmcblk0p2:p2:' \
