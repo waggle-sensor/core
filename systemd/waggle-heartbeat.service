@@ -2,8 +2,8 @@
 Description=Triggers Wagman heartbeat line.
 
 [Service]
-WorkingDirectory=/usr/lib/waggle/waggle_image/scripts
-ExecStart=/usr/lib/waggle/waggle_image/scripts/heartbeat.sh
+WorkingDirectory=/usr/lib/waggle/core/scripts
+ExecStart=/usr/lib/waggle/core/scripts/heartbeat.sh
 
 Restart=Always
 RestartSec=5
