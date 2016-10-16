@@ -45,7 +45,7 @@ echo $device_line
 sed -i -e 's:/home/odroid/resize.log:/root/resize.log:' \
        -e "s:\(    start)\):\1\n\t\t${device_line}:" \
        -e 's:grep mmcblk0p2:grep p2:' \
-       -e 's:/dev/mmcblk0:$device:' /aafirstboot
+       -e 's:/dev/mmcblk0:${device}:' /aafirstboot
 
 # Change net raise timeout to something more reasonable
 sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/networking.service
