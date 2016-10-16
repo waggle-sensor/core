@@ -5,7 +5,7 @@ Description=Triggers Wagman heartbeat line.
 WorkingDirectory=/usr/lib/waggle/core/scripts
 ExecStart=/usr/lib/waggle/core/scripts/heartbeat.sh
 
-Restart=Always
+Restart=always
 RestartSec=5
 
 [Install]
