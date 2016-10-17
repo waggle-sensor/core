@@ -184,6 +184,11 @@ fi
 # set hostname and /etc/hosts
 #
 if [ "${MAC_ADDRESS}x" !=  "x" ] ; then
+    if [ "${ODROID_MODEL}x" == "XU3x" ] ; then
+      # setup the static IP address for the XU4
+      sed -i "s:MAC_ADDRESS:${MAC_STRING}:" /etc/network/interfaces
+      ifup enx${MAC_STRING}
+    fi
     
     NEW_HOSTNAME="${MAC_STRING}${CURRENT_DEVICE_TYPE}"
     
