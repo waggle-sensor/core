@@ -45,7 +45,8 @@ cp ${script_dir}/aafirstboot /
 sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/networking.service
 sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/ifup@.service
 systemctl disable apt-daily.timer
-#systemctl disable unattended-upgrades.service
+systemctl disable time-sync.target
+systemctl disable systemd-timesyncd
 
 # Restrict SSH connections to local port bindings
 sed -i 's/^#ListenAddress ::$/ListenAddress 127.0.0.1/' /etc/ssh/sshd_config
