@@ -16,6 +16,10 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 case "$1" in
     start)
+		/usr/lib/waggle/core/scripts/detect_mac_address.sh
+		sed -i "s:MAC_ADDRESS:${MAC_STRING}:" /etc/network/interfaces
+		sed -i "s:%WAGGLE_ID%:${MAC_STRING}:" /etc/rabbitmq/rabbitmq.config
+
 		device=$(df | grep '/$' | awk '{print $1}' | sed 's/p2//')
 		if [ -f /.first_boot ]; then
       # setup the static IP address for the XU4
