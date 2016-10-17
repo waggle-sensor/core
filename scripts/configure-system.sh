@@ -39,13 +39,7 @@ set -e
 # make sure serial console requires password
 #sed -i -e 's:exec /bin/login -f root:exec /bin/login:' /bin/auto-root-login
 
-# Change the resize.log location since we delete the odroid user
-device_line='device=$(df | grep '"'"'/$'"'"' | awk '"'"'{print $1}'"'"' | sed '"'"'s/p2//'"'"')'
-echo $device_line
-sed -i -e 's:/home/odroid/resize.log:/root/resize.log:' \
-       -e "s:\(    start)\):\1\n\t\t${device_line}:" \
-       -e 's:grep mmcblk0p2:grep p2:' \
-       -e 's:/dev/mmcblk0:${device}:' /aafirstboot
+cp ${script_dir}/aafirstboot /
 
 # Change net raise timeout to something more reasonable
 sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/networking.service
