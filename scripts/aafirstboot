@@ -16,16 +16,8 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 case "$1" in
     start)
-		/usr/lib/waggle/core/scripts/detect_mac_address.sh
-		sed -i "s:MAC_ADDRESS:${MAC_STRING}:" /etc/network/interfaces
-		sed -i "s:%WAGGLE_ID%:${MAC_STRING}:" /etc/rabbitmq/rabbitmq.config
-
 		device=$(df | grep '/$' | awk '{print $1}' | sed 's/p2//')
 		if [ -f /.first_boot ]; then
-      # setup the static IP address for the XU4
-      . /usr/lib/waggle/core/scripts/detect_mac_address.sh
-      sed -i "s:MAC_ADDRESS:${MAC_STRING}:" /etc/network/interfaces
-
 			# ok, its the very first boot, we need to resize the disk.
 			p2_start=`fdisk -l ${device} | grep p2 | awk '{print $2}'`
 			p2_finish=$((`fdisk -l ${device} | grep Disk | grep sectors | awk '{printf $7}'` - 1024))

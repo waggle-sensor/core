@@ -3,6 +3,7 @@
 # returns
 export MAC_ADDRESS=""
 export MAC_STRING="" 
+export NODE_ID="" 
 
 set +e
 while [ "${MAC_ADDRESS}x" == "x" ] ; do
@@ -20,3 +21,12 @@ set -e
 
 echo "MAC_ADDRESS=${MAC_ADDRESS}"
 echo "MAC_STRING=${MAC_STRING}"
+
+if [ ! ${#MAC_STRING} -ge 12 ]; then
+  echo "error: could not extract MAC address"
+  exit 1
+else
+  NODE_ID="0000${MAC_STRING}"
+fi
+
+echo "NODE_ID=${NODE_ID}"

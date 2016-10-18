@@ -14,22 +14,12 @@ if [ $(echo $ODROIDMODEL | grep "^ODROID" | wc -l) -eq 0 ] ; then
   echo "warning: could not detect ODROID model"
 fi
 
-### Node ID
-export NODE_ID=""
-
 
 #IS_ODROIDC=$(echo $ODROIDMODEL | grep "^ODROIDC" | wc -l)
 
 
 
 . /usr/lib/waggle/core/scripts/detect_mac_address.sh
-
-if [ ! ${#MAC_STRING} -ge 12 ]; then
-  echo "error: could not extract MAC address"
-  exit 1
-else
-  NODE_ID="0000${MAC_STRING}"  
-fi
 
 # try memory card serial number
 export CID_FILE="/sys/block/mmcblk0/device/cid"
