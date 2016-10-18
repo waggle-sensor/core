@@ -7,7 +7,6 @@ export NODE_ID=""
 
 set +e
 
-while [ "${MAC_ADDRESS}x" == "x" ] ; do
 ifaces=$(ls -d /sys/class/net/enx* /sys/class/net/eth*)
 for iface in $ifaces; do
   export $(udevadm info --path=$iface | grep IFINDEX | awk '{print $2}')
