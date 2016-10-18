@@ -45,6 +45,7 @@ cp ${current_dir}/systemd/waggle-* /etc/systemd/system
 systemctl enable waggle-epoch.service
 systemctl enable waggle-heartbeat.service
 systemctl enable waggle-init.service
+systemctl enable waggle-configure-static-iface.service
 
 
 ln -sf ${current_dir}/scripts/waggle-service.py /usr/bin/waggle-service
