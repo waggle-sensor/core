@@ -11,4 +11,4 @@ sleep 2
 wagman-client start 2
 
 #then call coresense flash
-/usr/lib/waggle/core/scripts/coresenseflash /tmp/coresense_fw.ino.bin
+./coresenseflash /tmp/coresense_fw.ino.bin
