@@ -10,5 +10,7 @@ sleep 2
 #Ask wagman to powerup the coresense board
 wagman-client start 2
 
+sleep 2
+
 #then call coresense flash
 ./coresenseflash /tmp/coresense_fw.ino.bin
