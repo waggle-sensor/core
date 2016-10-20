@@ -59,3 +59,6 @@ echo ""
 echo "done"
 
 ${current_dir}/scripts/install_dependencies.sh
+
+# may want to move into a different script?
+cp ${current_dir}/scripts/rabbitmqadmin /usr/bin
