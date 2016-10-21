@@ -44,10 +44,9 @@ try_set_time()
     set -x
     date -s@${date}
     EXIT_CODE=$?
-    if [ ${EXIT_CODE} -eq 0 ] ; then
-       return 0
+    if [ ${EXIT_CODE} -ne 0 ] ; then
+       return ${EXIT_CODE}
     fi
-    return 1
   elif [ "x$ODROID_MODEL" == "xODROIDC" ]; then
     system_date=$(date +%s)
     wagman_build_date=$(wagman-client ver | sed -n -e 's/time //p') || true
@@ -56,14 +55,14 @@ try_set_time()
     IFS=$'\n'
     date=$(echo "${dates[*]}" | sort -nr | head -n1)
     date -s @$date
-    return 0
   fi
 
   # Update the WagMan date when necessary
   if [ $date \> $wagman_date ]; then
     wagman-client date $(date +"%Y %m %d %H %M %S") || true
   fi
-  return 1
+
+  return 0
 }
 
 ########### start ###########
