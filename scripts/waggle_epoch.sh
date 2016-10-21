@@ -58,7 +58,7 @@ try_set_time()
   fi
 
   # Update the WagMan date when necessary
-  if [ $date \> $wagman_date ]; then
+  if [ $date -gt $wagman_date ]; then
     wagman-client date $(date +"%Y %m %d %H %M %S") || true
   fi
 
