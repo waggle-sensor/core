@@ -21,7 +21,6 @@ TIME_HIGH=1.0
 
 
 pidfile='/var/run/waggle/heartbeat.pid'
-
 OWN_PID=$$
 
 if [ -e ${pidfile} ] ; then
@@ -41,6 +40,16 @@ fi
 mkdir -p /var/run/waggle/
 
 echo "${OWN_PID}" > /var/run/waggle/heartbeat.pid
+
+
+MODE='wellness'   # 'wellness' or 'always'
+modefile='/etc/waggle/hbmode'
+if [ -e ${modefile} ] ; then
+  modefile_text=$(cat ${modefile})
+  if [ $modefile_text == 'always' ]; then
+    MODE='always'
+  fi
+fi
 
 ########
 
@@ -107,12 +116,12 @@ set -x
 echo "out" > /sys/class/gpio/gpio${GPIO_EXPORT}/direction
 set +x
 
-echo "Starting heartbeat..."
+echo "Starting heartbeat (mode '${MODE}')..."
 
 
 while [ 1 ] ; do 
   PIN_HIGH=1
-  if [ ${DEVICE}x == "Cx" ] ; then
+  if [ ${DEVICE}x == "Cx" && ${MODE} == "wellness" ] ; then
     CURRENT_TIME=`date +%s`
     ALIVE_TIME=`stat -c %Y ${ALIVE_FILE}`
     ALIVE_DURATION=`python -c "print(${CURRENT_TIME} - ${ALIVE_TIME})"`
