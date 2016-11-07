@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# determine Odroid model 
+# - sets ${ODROID_MODEL} to either 'C' or 'XU3'
+. /usr/lib/waggle/core/scripts/detect_odroid_model.sh
+
+# Determine root and alternate boot medium root device paths
+. /usr/lib/waggle/core/scripts/detect_disk_devices.sh
+
+run_tests() {
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  $script_dir/test_node.sh > /home/waggle/test_node_${ODROID_MODEL}_${CURRENT_DISK_DEVICE_TYPE}.log
+}
+
+generate_report() {
+  # Retrieve the eMMC test log
+  mount "${OTHER_DISK_DEVICE}p2" /media/test
+  cp /media/test/home/waggle/test_node_${ODROID_MODEL}_${CURRENT_DISK_DEVICE_TYPE}.log /home/waggle/
+  umount /media/test
+
+  if [ "${ODROID_MODEL}" -eq "C" ]; then
+    local report_file="/home/waggle/test-report.txt"
+    echo "Node Controller SD Test Results" >> $report_file
+    echo "-------------------------------" >> $report_file
+    cat /home/waggle/test_node_C_SD.log >> $report_file
+
+    echo "Node Controller eMMC Test Results" >> $report_file
+    echo "---------------------------------" >> $report_file
+    cat /home/waggle/test_node_C_MMC.log >> $report_file
+
+    echo "Guest Node SD Test Results" >> $report_file
+    echo "--------------------------" >> $report_file
+    cat /home/waggle/test_node_XU3_SD.log >> $report_file
+
+    echo "Guest Node eMMC Test Results" >> $report_file
+    echo "----------------------------" >> $report_file
+    cat /home/waggle/test_node_XU3_MMC.log >> $report_file
+  fi
+}
+
+
+start_file=/home/waggle/start_test
+continue_file=/home/waggle/continue_test
+finish_file=/home/waggle/finish_test
+if [ -e ${start_file} ] ; then
+  run_tests
+  rm ${start_file}
+  mount "${OTHER_DISK_DEVICE}p2" /media/test
+  if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "SDx" ]; then
+    touch /media/test${continue_file}
+    wagman-client bs 0 emmc
+  else:
+    touch /media/test${finish_file}
+    wagman-client bs 0 sd
+  fi
+  wagman-client stop 0 0
+elif [ -e ${continue_file} ]; then
+  run_tests
+  rm ${continue_file}
+  mount "${OTHER_DISK_DEVICE}p2" /media/test
+  touch /media/test${finish_file}
+  wagman-client bs 0 sd
+  wagman-client stop 0 0
+elif [ -e ${finish_file} ]; then
+  generate_report
+  rm ${finish_file}
+fi
