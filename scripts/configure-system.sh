@@ -165,14 +165,20 @@ touch /home/waggle/.ssh/authorized_keys
 chmod 600 /home/waggle/.ssh/authorized_keys
 chown waggle:waggle /home/waggle/.ssh/ /home/waggle/.ssh/authorized_keys
 
+# Setup a proper terminal emulator
+fgrep 'export TERM' /home/waggle/.bashrc && true
+if [ $? -eq 1 ]; then
+  echo 'export TERM=vt100' > /home/waggle/.bashrc
+fi
+fgrep 'export TERM' /root/.bashrc && true
+if [ $? -eq 1 ]; then
+  echo 'export TERM=vt100' > /root/.bashrc
+fi
+
 ### for paranoids
 echo > /root/.bash_history
 echo > /home/waggle/.bash_history
 
 set +e
-# monit accesses /dev/null even after leaving chroot, which makes it impossible unmount the new image
-/etc/init.d/monit stop
-killall monit
-sleep 3
 
 ${script_dir}/setup-rabbitmq.sh
