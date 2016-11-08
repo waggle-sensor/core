@@ -27,7 +27,7 @@ run_tests() {
 
 generate_report() {
   # Retrieve the eMMC test log
-  cp /media/test/home/waggle/test_node_${ODROID_MODEL}_${CURRENT_DISK_DEVICE_TYPE}.log /home/waggle/
+  cp /media/test/home/waggle/test_node_${ODROID_MODEL}_${OTHER_DISK_DEVICE_TYPE}.log /home/waggle/
 
   if [ "${ODROID_MODEL}" == "C" ]; then
     local report_file="/home/waggle/test-report.txt"
@@ -35,6 +35,7 @@ generate_report() {
     echo "-------------------------------" >> $report_file
     cat /home/waggle/test_node_C_SD.log >> $report_file
 
+    echo >> $report_file
     echo "Node Controller eMMC Test Results" >> $report_file
     echo "---------------------------------" >> $report_file
     cat /home/waggle/test_node_C_MMC.log >> $report_file
@@ -46,7 +47,8 @@ generate_report() {
     while [ $tries -lt $max_tries ]; do
       if [[ ! -e /home/waggle/test_node_XU3_SD.log || ! -e /home/waggle/test_node_XU3_MMC.log ]]; then
         tries=$(expr $tries + 1)
-        sleep 30
+        echo "Waiting for GN test logs..."
+        sleep 10
       else
         gn_done=1
         tries=$max_tries
@@ -54,17 +56,20 @@ generate_report() {
     done
 
     if [ $gn_done -eq 1 ]; then
+      echo >> $report_file
       echo "Guest Node SD Test Results" >> $report_file
       echo "--------------------------" >> $report_file
       cat /home/waggle/test_node_XU3_SD.log >> $report_file
 
+      echo >> $report_file
       echo "Guest Node eMMC Test Results" >> $report_file
       echo "----------------------------" >> $report_file
       cat /home/waggle/test_node_XU3_MMC.log >> $report_file
     else
-     echo "########################"
-     echo "Guest Node Tests Failed!"
-     echo "########################"
+      echo >> $report_file
+      echo "########################" >> $report_file
+      echo "Guest Node Tests Failed!" >> $report_file
+      echo "########################" >> $report_file
     fi
   elif [ "${ODROID_MODEL}" == "XU3" ]; then
     scp /home/waggle/test_node_*.log -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node waggle@10.31.81.10:
@@ -92,13 +97,13 @@ if [ -e ${start_file} ] ; then
     touch /media/test${finish_file}
     wagman-client bs 0 sd
   fi
-  wagman-client stop 0 0
+  #wagman-client stop 0 0
 elif [ -e ${continue_file} ]; then
   run_tests
   rm ${continue_file}
   touch /media/test${finish_file}
   wagman-client bs 0 sd
-  wagman-client stop 0 0
+  #wagman-client stop 0 0
 elif [ -e ${finish_file} ]; then
   generate_report
   rm ${finish_file}
