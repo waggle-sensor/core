@@ -14,7 +14,9 @@ run_gn_tests() {
 
 run_tests() {
   if [ "${ODROID_MODEL}" == "C" ]; then
-    run_gn_tests
+    if [ "${CURRENT_DISK_DEVICE_TYPE}" == "SD" ]; then
+      run_gn_tests
+    fi
     local script_dir="/usr/lib/waggle/nodecontroller/scripts/"
   elif [ "${ODROID_MODEL}" == "XU3" ]; then
     local script_dir="/usr/lib/waggle/guestnode/scripts/"
