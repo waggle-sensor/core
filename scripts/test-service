@@ -8,17 +8,22 @@
 . /usr/lib/waggle/core/scripts/detect_disk_devices.sh
 
 run_tests() {
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  $script_dir/test_node.sh > /home/waggle/test_node_${ODROID_MODEL}_${CURRENT_DISK_DEVICE_TYPE}.log
+  if [ "${ODROID_MODEL}" == "C" ]; then
+    local script_dir="/usr/lib/waggle/nodecontroller/scripts/"
+  elif [ "${ODROID_MODEL}" == "XU3" ]; then
+    local script_dir="/usr/lib/waggle/guestnode/scripts/"
+  else
+    echo "ERROR: Odroid model not detected."
+    exit 1
+  fi
+  ${script_dir}test_node.sh > /home/waggle/test_node_${ODROID_MODEL}_${CURRENT_DISK_DEVICE_TYPE}.log
 }
 
 generate_report() {
   # Retrieve the eMMC test log
-  mount "${OTHER_DISK_DEVICE}p2" /media/test
   cp /media/test/home/waggle/test_node_${ODROID_MODEL}_${CURRENT_DISK_DEVICE_TYPE}.log /home/waggle/
-  umount /media/test
 
-  if [ "${ODROID_MODEL}" -eq "C" ]; then
+  if [ "${ODROID_MODEL}" == "C" ]; then
     local report_file="/home/waggle/test-report.txt"
     echo "Node Controller SD Test Results" >> $report_file
     echo "-------------------------------" >> $report_file
@@ -38,6 +43,10 @@ generate_report() {
   fi
 }
 
+mount | grep '/media/test' && true
+if [ $? -eq 1 ]; then
+  mount "${OTHER_DISK_DEVICE}p2" /media/test
+fi
 
 start_file=/home/waggle/start_test
 continue_file=/home/waggle/continue_test
@@ -45,11 +54,10 @@ finish_file=/home/waggle/finish_test
 if [ -e ${start_file} ] ; then
   run_tests
   rm ${start_file}
-  mount "${OTHER_DISK_DEVICE}p2" /media/test
-  if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "SDx" ]; then
+  if [ "${CURRENT_DISK_DEVICE_TYPE}" == "SD" ]; then
     touch /media/test${continue_file}
     wagman-client bs 0 emmc
-  else:
+  else
     touch /media/test${finish_file}
     wagman-client bs 0 sd
   fi
@@ -57,7 +65,6 @@ if [ -e ${start_file} ] ; then
 elif [ -e ${continue_file} ]; then
   run_tests
   rm ${continue_file}
-  mount "${OTHER_DISK_DEVICE}p2" /media/test
   touch /media/test${finish_file}
   wagman-client bs 0 sd
   wagman-client stop 0 0
