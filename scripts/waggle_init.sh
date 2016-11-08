@@ -135,56 +135,31 @@ fi
 . /usr/lib/waggle/core/scripts/detect_mac_address.sh 
 # returns MAC_ADDRESS and MAC_STRING
 
-
-CURRENT_DEVICE=$(mount | grep "on / " | cut -f 1 -d ' ' | grep -o "/dev/mmcblk[0-1]")
-OTHER_DEVICE=""
-
-if [ "${CURRENT_DEVICE}x" == "x" ] ; then
-  echo "memory card not recognized"
-  rm -f ${pidfile}
-  exit 1
-fi
-
-
-if [ "${CURRENT_DEVICE}x" == "/dev/mmcblk0x" ] ; then
-  CURRENT_DEVICE_NAME="mmcblk0"
-  OTHER_DEVICE="/dev/mmcblk1"
-  OTHER_DEVICE_NAME="mmcblk1"
-fi
-
-if [ "${CURRENT_DEVICE}x" == "/dev/mmcblk1x" ] ; then
-  CURRENT_DEVICE_NAME="mmcblk1"
-  OTHER_DEVICE="/dev/mmcblk0"
-  OTHER_DEVICE_NAME="mmcblk0"
-fi
-
 #
-# SD-card or eMMC ? "SD" or "MMC"
-#
-CURRENT_DEVICE_TYPE=$(cat /sys/block/${CURRENT_DEVICE_NAME}/device/type)
-OTHER_DEVICE_TYPE=""
-if [ -e /sys/block/${OTHER_DEVICE_NAME}/device/type ] ; then
-    OTHER_DEVICE_TYPE=$(cat /sys/block/${OTHER_DEVICE_NAME}/device/type)
-fi
+# detect disk device and type
+. /usr/lib/waggle/core/scripts/detect_disk_devices.sh 
+# returns CURRENT_DISK_DEVICE, CURRENT_DISK_DEVICE_NAME, CURRENT_DISK_DEVICE_TYPE,
+#         OTHER_DISK_DEVICE, OTHER_DISK_DEVICE_NAME, OTHER_DISK_DEVICE_TYPE
 
 
-if [ "${CURRENT_DEVICE_TYPE}x" == "SDx" ] || [ "${CURRENT_DEVICE_TYPE}x" == "MMCx" ] ; then
+if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "SDx" ] || [ "${CURRENT_DISK_DEVICE_TYPE}x" == "MMCx" ] ; then
 
-  echo -e "#e.g. 'SD' or 'MMC'\n${CURRENT_DEVICE_TYPE}" > /etc/waggle/current_memory_device
+  echo -e "#e.g. 'SD' or 'MMC'\n${CURRENT_DISK_DEVICE_TYPE}" > /etc/waggle/current_memory_device
 else
-  echo "error: memory device not recognized: ${CURRENT_DEVICE_TYPE}"
+  echo "error: memory device not recognized: ${CURRENT_DISK_DEVICE_TYPE}"
   exit 1
 fi
+
 
 if [ ${DEBUG} -eq 1 ] ; then
-  curl --retry 10 "${DEBUG_HOST}/failovertest?CURRENT_DEVICE_TYPE=${CURRENT_DEVICE_TYPE}" || true
+  curl --retry 10 "${DEBUG_HOST}/failovertest?CURRENT_DISK_DEVICE_TYPE=${CURRENT_DISK_DEVICE_TYPE}" || true
 fi
 
 #
 # set hostname and /etc/hosts
 #
 if [ "${MAC_ADDRESS}x" !=  "x" ] ; then
-    NEW_HOSTNAME="${MAC_STRING}${CURRENT_DEVICE_TYPE}"
+    NEW_HOSTNAME="${MAC_STRING}${CURRENT_DISK_DEVICE_TYPE}"
     
     OLD_HOSTNAME=$(cat /etc/hostname | tr -d '\n')
     
@@ -264,10 +239,10 @@ set -e
 #
 # Test if other memory card actually exists
 #
-if [ ! -e ${OTHER_DEVICE} ] ; then
+if [ ! -e ${OTHER_DISK_DEVICE} ] ; then
   echo "Other memory card not found."
  
-  if [ "${CURRENT_DEVICE_TYPE}x" == "MMCx" ] && [ ${DEBUG} -eq 0 ]; then
+  if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "MMCx" ] && [ ${DEBUG} -eq 0 ]; then
   
     echo "Detected MMC, will go to sleep to prevent nodecontroller software from starting"
     sleep infinity
@@ -281,13 +256,13 @@ if [ ! -e ${OTHER_DEVICE} ] ; then
 fi
 
 # umount, just in case
-for device in $(mount | grep "^${OTHER_DEVICE}" | cut -f1 -d ' ') ; do 
+for device in $(mount | grep "^${OTHER_DISK_DEVICE}" | cut -f1 -d ' ') ; do 
   echo "Warning, device ${device} is currently mounted"
   umount ${device}
   sleep 5
 done
 
-for device in $(mount | grep "^${OTHER_DEVICE}" | cut -f1 -d ' ') ; do 
+for device in $(mount | grep "^${OTHER_DISK_DEVICE}" | cut -f1 -d ' ') ; do 
   echo "Error, device ${device} is still mounted"
   rm -f ${pidfile}
   exit 1
@@ -299,7 +274,7 @@ done
 # Check other boot partition
 #
 BOOT_PARTITION_EXISTS=0
-if [ $(parted -s -m ${OTHER_DEVICE} print | grep "^1:.*fat16::;" | wc -l ) -eq 1 ] ; then
+if [ $(parted -s -m ${OTHER_DISK_DEVICE} print | grep "^1:.*fat16::;" | wc -l ) -eq 1 ] ; then
   echo "boot partition found"
   BOOT_PARTITION_EXISTS=1
 else
@@ -326,7 +301,7 @@ if [ ${RECOVERY_NEEDED} -eq 0 ] && [ ${BOOT_PARTITION_FS_OK} -eq 1 ] ; then
   mkdir -p /media/test
 
   set +e
-  mount ${OTHER_DEVICE}p1 /media/test
+  mount ${OTHER_DISK_DEVICE}p1 /media/test
   if [ $? -ne 0 ]  ; then
     echo "!!! Could not mount boot partition"
     RECOVERY_NEEDED=1
@@ -361,7 +336,7 @@ set -e
 #
 
 DATA_PARTITION_EXISTS=0
-if [ $(parted -s -m ${OTHER_DEVICE} print | grep "^2:.*ext4::;" | wc -l ) -eq 1 ] ; then
+if [ $(parted -s -m ${OTHER_DISK_DEVICE} print | grep "^2:.*ext4::;" | wc -l ) -eq 1 ] ; then
   echo "data partition found"
   DATA_PARTITION_EXISTS=1
 else
@@ -372,7 +347,7 @@ fi
 DATA_PARTITION_FS_OK=0
 if [ ${RECOVERY_NEEDED} -eq 0 ] && [ ${DATA_PARTITION_EXISTS} -eq 1 ] ; then
   set +e
-  fsck.ext4 -n ${OTHER_DEVICE}p2
+  fsck.ext4 -n ${OTHER_DISK_DEVICE}p2
   if [ $? -eq 0 ]  ; then
     DATA_PARTITION_FS_OK=1
   else
@@ -389,7 +364,7 @@ if [ ${RECOVERY_NEEDED} -eq 0 ] && [ ${DATA_PARTITION_FS_OK} -eq 1 ] ; then
   mkdir -p /media/test
 
   set +e
-  mount ${OTHER_DEVICE}p2 /media/test
+  mount ${OTHER_DISK_DEVICE}p2 /media/test
   if [ $? -ne 0 ]  ; then
     echo "!!! Could not mount data partition"
     RECOVERY_NEEDED=1
@@ -421,7 +396,7 @@ set -e
 
 
 # Since we cant't recover eMMC, the test will skip this.
-if [ ${DEBUG} -eq 1 ] && [ "${ODROID_MODEL}x" == "XU3x" ] && [ "${CURRENT_DEVICE_TYPE}x" == "SDx" ] ; then
+if [ ${DEBUG} -eq 1 ] && [ "${ODROID_MODEL}x" == "XU3x" ] && [ "${CURRENT_DISK_DEVICE_TYPE}x" == "SDx" ] ; then
   RECOVERY_NEEDED=0
   WANT_WIPE=0
   curl --retry 10 "${DEBUG_HOST}/failovertest?status=skip_recovery" || true
@@ -446,8 +421,8 @@ if [ ${RECOVERY_NEEDED} -eq 1 ] ; then
     set -x
     
     #wipe first 500MB (do not wipe eMMC on XU4)
-    if [ "${ODROID_MODEL}x" == "Cx" ] || [ "${OTHER_DEVICE_TYPE}x" == "SDx" ] ; then
-      dd if=/dev/zero of=${OTHER_DEVICE} bs=1M count=500
+    if [ "${ODROID_MODEL}x" == "Cx" ] || [ "${OTHER_DISK_DEVICE_TYPE}x" == "SDx" ] ; then
+      dd if=/dev/zero of=${OTHER_DISK_DEVICE} bs=1M count=500
       sync
       sleep 2
     fi
@@ -456,21 +431,21 @@ if [ ${RECOVERY_NEEDED} -eq 1 ] ; then
     
     
     cd /usr/lib/waggle/core/setup-disk/
-    #./write-boot.sh ${OTHER_DEVICE}
-    ./make-partitions.sh  ${OTHER_DEVICE}
+    #./write-boot.sh ${OTHER_DISK_DEVICE}
+    ./make-partitions.sh  ${OTHER_DISK_DEVICE}
     sleep 3
     
     if [ "${ODROID_MODEL}x" == "Cx" ] ; then
       cd /usr/share/c1_uboot
-      ./sd_fusing.sh ${OTHER_DEVICE}
+      ./sd_fusing.sh ${OTHER_DISK_DEVICE}
     fi
     
     if [ "${ODROID_MODEL}x" == "XU3x" ] ; then
         cd /usr/lib/waggle/core/setup-disk/xu3
-        ./sd_fusing.sh ${OTHER_DEVICE}
+        ./sd_fusing.sh ${OTHER_DISK_DEVICE}
     fi
   
-    mount ${OTHER_DEVICE}p1 /media/test/
+    mount ${OTHER_DISK_DEVICE}p1 /media/test/
     cd /media/test
     tar xvzf /recovery_p1.tar.gz
     
@@ -486,7 +461,7 @@ if [ ${RECOVERY_NEEDED} -eq 1 ] ; then
     done
     set -e
     
-    mount ${OTHER_DEVICE}p2 /media/test/
+    mount ${OTHER_DISK_DEVICE}p2 /media/test/
     cd /media/test
     tar xvzf /recovery_p2.tar.gz
     
@@ -519,23 +494,23 @@ if [ ${RECOVERY_NEEDED} -eq 1 ] ; then
     set -e
     
     
-    OTHER_DEVICE_BOOT_UUID=$(blkid -o export ${OTHER_DEVICE}p1 | grep "^UUID" |  cut -f2 -d '=')
-    echo "OTHER_DEVICE_BOOT_UUID: ${OTHER_DEVICE_BOOT_UUID}"
+    OTHER_DISK_DEVICE_BOOT_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p1 | grep "^UUID" |  cut -f2 -d '=')
+    echo "OTHER_DISK_DEVICE_BOOT_UUID: ${OTHER_DISK_DEVICE_BOOT_UUID}"
     
-    OTHER_DEVICE_DATA_UUID=$(blkid -o export ${OTHER_DEVICE}p2 | grep "^UUID" |  cut -f2 -d '=')
-    echo "OTHER_DEVICE_DATA_UUID: ${OTHER_DEVICE_DATA_UUID}"
+    OTHER_DISK_DEVICE_DATA_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p2 | grep "^UUID" |  cut -f2 -d '=')
+    echo "OTHER_DISK_DEVICE_DATA_UUID: ${OTHER_DISK_DEVICE_DATA_UUID}"
     
     
     
     
     # modify boot.ini
-    mount ${OTHER_DEVICE}p1 /media/test/
+    mount ${OTHER_DISK_DEVICE}p1 /media/test/
     sleep 1
-    sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DEVICE_DATA_UUID}'/' /media/test/boot.ini 
+    sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DISK_DEVICE_DATA_UUID}'/' /media/test/boot.ini 
     
     
     
-    if [ $(grep -v "^#" /media/test/boot.ini | grep "root=UUID=${OTHER_DEVICE_DATA_UUID}" | wc -l) -eq 0 ] ; then
+    if [ $(grep -v "^#" /media/test/boot.ini | grep "root=UUID=${OTHER_DISK_DEVICE_DATA_UUID}" | wc -l) -eq 0 ] ; then
         echo "Error: boot.ini does not have new UUID in bootargs or bootrootfs"
         rm -f ${pidfile}
         exit 1
@@ -549,10 +524,10 @@ if [ ${RECOVERY_NEEDED} -eq 1 ] ; then
     set -e
     
     # write /etc/fstab
-    mount ${OTHER_DEVICE}p2 /media/test/
+    mount ${OTHER_DISK_DEVICE}p2 /media/test/
     
-    echo "UUID=${OTHER_DEVICE_DATA_UUID}	/	ext4	errors=remount-ro,noatime,nodiratime		0 1" > /media/test/etc/fstab
-    echo "UUID=${OTHER_DEVICE_BOOT_UUID}	/media/boot	vfat	defaults,rw,owner,flush,umask=000	0 0" >> /media/test/etc/fstab
+    echo "UUID=${OTHER_DISK_DEVICE_DATA_UUID}	/	ext4	errors=remount-ro,noatime,nodiratime		0 1" > /media/test/etc/fstab
+    echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID}	/media/boot	vfat	defaults,rw,owner,flush,umask=000	0 0" >> /media/test/etc/fstab
     echo "tmpfs		/tmp	tmpfs	nodev,nosuid,mode=1777			0 0" >> /media/test/etc/fstab
     
     
@@ -560,7 +535,7 @@ if [ ${RECOVERY_NEEDED} -eq 1 ] ; then
     
     rm -f /root/do_recovery /media/test/root/do_recovery
     
-    echo "${MAC_STRING}_${OTHER_DEVICE_TYPE}" > /media/test/etc/hostname
+    echo "${MAC_STRING}_${OTHER_DISK_DEVICE_TYPE}" > /media/test/etc/hostname
     
     
     set +e
@@ -604,8 +579,8 @@ set -e
 # sync config and cert files
 #
     
-if [ -e ${OTHER_DEVICE}p2 ] ; then    
-  mount ${OTHER_DEVICE}p2 /media/test/
+if [ -e ${OTHER_DISK_DEVICE}p2 ] ; then    
+  mount ${OTHER_DISK_DEVICE}p2 /media/test/
 
   sleep 1
 
@@ -635,7 +610,7 @@ if [ -e ${OTHER_DEVICE}p2 ] ; then
 
 fi
 
-if [ "${CURRENT_DEVICE_TYPE}x" == "MMCx" ] && [ ${DEBUG} -eq 0 ]; then
+if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "MMCx" ] && [ ${DEBUG} -eq 0 ]; then
   
   echo "Detected MMC, will go to sleep to prevent nodecontroller software from starting"
   sleep infinity
