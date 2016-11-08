@@ -40,6 +40,11 @@ generate_report() {
     echo "Guest Node eMMC Test Results" >> $report_file
     echo "----------------------------" >> $report_file
     cat /home/waggle/test_node_XU3_MMC.log >> $report_file
+  elif [ "${ODROID_MODEL}" == "XU3" ]; then
+    scp /home/waggle/test_node_*.log -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node waggle@10.31.81.10:
+  else
+    echo "ERROR: Odroid model not detected."
+    exit 2
   fi
 }
 
