@@ -7,8 +7,14 @@
 # Determine root and alternate boot medium root device paths
 . /usr/lib/waggle/core/scripts/detect_disk_devices.sh
 
+run_gn_tests() {
+  ssh -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node waggle@10.31.81.10 touch start_test
+  ssh -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node waggle@10.31.81.10 systemctl start waggle-test-node
+}
+
 run_tests() {
   if [ "${ODROID_MODEL}" == "C" ]; then
+    run_gn_tests
     local script_dir="/usr/lib/waggle/nodecontroller/scripts/"
   elif [ "${ODROID_MODEL}" == "XU3" ]; then
     local script_dir="/usr/lib/waggle/guestnode/scripts/"
@@ -33,13 +39,33 @@ generate_report() {
     echo "---------------------------------" >> $report_file
     cat /home/waggle/test_node_C_MMC.log >> $report_file
 
-    echo "Guest Node SD Test Results" >> $report_file
-    echo "--------------------------" >> $report_file
-    cat /home/waggle/test_node_XU3_SD.log >> $report_file
+    # wait a reasonable amount of time for the GN to finish its tests
+    local tries=0
+    local max_tries=6
+    local gn_done=0
+    while [ $tries -lt $max_tries ]; do
+      if [[ ! -e /home/waggle/test_node_XU3_SD.log || ! -e /home/waggle/test_node_XU3_MMC.log ]]; then
+        tries=$(expr $tries + 1)
+        sleep 30
+      else
+        gn_done=1
+        tries=$max_tries
+      fi
+    done
 
-    echo "Guest Node eMMC Test Results" >> $report_file
-    echo "----------------------------" >> $report_file
-    cat /home/waggle/test_node_XU3_MMC.log >> $report_file
+    if [ $gn_done -eq 1 ]; then
+      echo "Guest Node SD Test Results" >> $report_file
+      echo "--------------------------" >> $report_file
+      cat /home/waggle/test_node_XU3_SD.log >> $report_file
+
+      echo "Guest Node eMMC Test Results" >> $report_file
+      echo "----------------------------" >> $report_file
+      cat /home/waggle/test_node_XU3_MMC.log >> $report_file
+    else
+     echo "########################"
+     echo "Guest Node Tests Failed!"
+     echo "########################"
+    fi
   elif [ "${ODROID_MODEL}" == "XU3" ]; then
     scp /home/waggle/test_node_*.log -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node waggle@10.31.81.10:
   else
