@@ -134,7 +134,6 @@ adduser waggle waggle
 
 echo "removing user \"waggle\" from group \"sudo\""
 deluser waggle sudo
-sed -i 's:^#includedir /etc/sudoers.d$:includedir /etc/sudoers.d:' /etc/sudoers
 
 set -e
 
