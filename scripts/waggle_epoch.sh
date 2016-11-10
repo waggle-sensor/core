@@ -27,7 +27,7 @@ try_set_time()
   #fi
   #echo "Device seems to have the wrong date: year=${CURRENT_YEAR}"
 
-  wagman_date=$(wagman-client epoch) || wagman_date=0
+  wagman_date=0
   date=0
 
   # get epoch from server
@@ -55,6 +55,7 @@ try_set_time()
        return ${EXIT_CODE}
     fi
   elif [ "x$ODROID_MODEL" == "xODROIDC" ]; then
+    wagman_date=$(wagman-client epoch) || wagman_date=0
     system_date=$(date +%s)
     wagman_build_date=$(wagman-client ver | sed -n -e 's/time //p') || true
     guest_node_date=$(ssh -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node \
