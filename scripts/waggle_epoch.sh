@@ -28,7 +28,7 @@ try_set_time()
   #echo "Device seems to have the wrong date: year=${CURRENT_YEAR}"
 
   wagman_date=0
-  date=0
+  unset date
 
   # get epoch from server
   set +e
@@ -41,8 +41,8 @@ try_set_time()
       return ${EXIT_CODE}
     fi
   else
-    date=$(curl --connect-timeout 10 --retry 100 --retry-delay 10 http://${SERVER_HOST}/api/1/epoch \
-      | grep -oP '{"epoch": \d+}' | grep -oP '\d+') || true
+    curl_out=$(curl -s --connect-timeout 10 --retry 100 --retry-delay 10 http://${SERVER_HOST}/api/1/epoch | tr '\n' ' ') || true
+    date=$(python -c "import json; print(json.loads('${curl_out}')['epoch'])") || unset date
   fi
   set -e
 
@@ -57,10 +57,10 @@ try_set_time()
   elif [ "x$ODROID_MODEL" == "xODROIDC" ]; then
     wagman_date=$(wagman-client epoch) || wagman_date=0
     system_date=$(date +%s)
-    wagman_build_date=$(wagman-client ver | sed -n -e 's/time //p') || true
+    wagman_build_date=$(wagman-client ver | sed -n -e 's/time //p') || wagman_build_date=0
     guest_node_date=$(ssh -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node \
                         -o "StrictHostKeyChecking no" -o "ConnectTimeout 30" \
-                        waggle@10.31.81.51 -x date +%s) || true
+                        waggle@10.31.81.51 -x date +%s) || guest_node_date=0
     dates=($system_date $wagman_date $wagman_build_date $guest_node_date)
     IFS=$'\n'
     date=$(echo "${dates[*]}" | sort -nr | head -n1)
