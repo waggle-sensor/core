@@ -33,7 +33,9 @@ mv /tmp/sshd /etc/pam.d/sshd
 
 mkdir -p /etc/waggle/
 echo "10.31.81.10" > /etc/waggle/node_controller_host
-echo "wellness" > /etc/waggle/hbmode
+
+# Change to 'wellness' when ready for deployment
+echo "always" > /etc/waggle/hbmode
 
 set -e
 
