@@ -61,6 +61,12 @@ if [ -e /root/do_recovery ] ; then
     RECOVER_IF_NEEDED=1
 fi
 
+# This file can be used by other services to avoid reboots
+# until the waggle-init service has finished performing
+# critical activities.
+INIT_FINISHED_FILE="/root/recovery_finished"
+rm ${INIT_FINISHED_FILE}
+
 
 if [ ! -e /media/boot/boot.ini ] ; then
   echo "error: could not find /media/boot/boot.ini"
@@ -406,6 +412,7 @@ fi
 
 if [ ${RECOVERY_NEEDED} -eq 1 ] ; then
   echo "Warning: Recovery needed !"
+
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_needed" || true
   fi
@@ -609,6 +616,8 @@ if [ -e ${OTHER_DISK_DEVICE}p2 ] ; then
   set -e
 
 fi
+
+touch ${INIT_FINISHED_FILE}
 
 if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "MMCx" ] && [ ${DEBUG} -eq 0 ]; then
   
