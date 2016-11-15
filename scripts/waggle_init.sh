@@ -65,7 +65,9 @@ fi
 # until the waggle-init service has finished performing
 # critical activities.
 INIT_FINISHED_FILE="/root/init_finished"
+INIT_FINISHED_FILE_WAGGLE="/home/waggle/init_finished"
 rm ${INIT_FINISHED_FILE}
+rm ${INIT_FINISHED_FILE_WAGGLE}
 
 
 if [ ! -e /media/boot/boot.ini ] ; then
@@ -618,6 +620,7 @@ if [ -e ${OTHER_DISK_DEVICE}p2 ] ; then
 fi
 
 touch ${INIT_FINISHED_FILE}
+touch ${INIT_FINISHED_FILE_WAGGLE}
 
 if [ ${DEBUG} -eq 1 ] ; then
   curl --retry 10 "${DEBUG_HOST}/failovertest?status=done" || true
