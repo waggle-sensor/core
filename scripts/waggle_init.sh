@@ -619,14 +619,6 @@ fi
 
 touch ${INIT_FINISHED_FILE}
 
-if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "MMCx" ] && [ ${DEBUG} -eq 0 ]; then
-  
-  echo "Detected MMC, will go to sleep to prevent nodecontroller software from starting"
-  sleep infinity
-  exit 1
-  
-fi
-
 if [ ${DEBUG} -eq 1 ] ; then
   curl --retry 10 "${DEBUG_HOST}/failovertest?status=done" || true
 fi
