@@ -64,7 +64,7 @@ fi
 # This file can be used by other services to avoid reboots
 # until the waggle-init service has finished performing
 # critical activities.
-INIT_FINISHED_FILE="/root/recovery_finished"
+INIT_FINISHED_FILE="/root/init_finished"
 rm ${INIT_FINISHED_FILE}
 
 

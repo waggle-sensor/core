@@ -121,7 +121,7 @@ echo "Starting heartbeat (mode '${MODE}')..."
 
 while [ 1 ] ; do 
   PIN_HIGH=1
-  if [[ ${DEVICE}x == "Cx" && ${MODE} == "wellness" ]] ; then
+  if [[ ${DEVICE}x == "Cx" && ${MODE} == "wellness"  && -e /root/init_finished ]] ; then
     CURRENT_TIME=`date +%s`
     ALIVE_TIME=`stat -c %Y ${ALIVE_FILE}`
     ALIVE_DURATION=`python -c "print(${CURRENT_TIME} - ${ALIVE_TIME})"`
