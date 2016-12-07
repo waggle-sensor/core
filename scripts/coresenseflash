@@ -17,6 +17,9 @@ then
     exit
 fi
 
+if [ -e "/dev/waggle_coresense" ]
+then
+
 echo "Resetting Coresense board to bootloader mode... (Step 1/2)"
 echo
 stty -F /dev/waggle_coresense 1200 hupcl; sleep 2
@@ -26,3 +29,9 @@ echo
 echo 
 echo ">>>>>>>>>>>> Firmware flash process completed <<<<<<<<<<<<<"
 echo
+
+else 
+
+echo "Coresense device not found."
+
+fi
