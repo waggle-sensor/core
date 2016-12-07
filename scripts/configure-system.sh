@@ -31,6 +31,9 @@ apt-get remove --yes ubuntu-release-upgrader-core
 cat /etc/pam.d/sshd | sed 's/^\(..*pam_motd..*\)/# \1/' > /tmp/sshd
 mv /tmp/sshd /etc/pam.d/sshd
 
+# enable persistent systemd journaling
+mkdir -p /var/log/journal
+
 mkdir -p /etc/waggle/
 echo "10.31.81.10" > /etc/waggle/node_controller_host
 
@@ -138,10 +141,6 @@ echo "removing user \"waggle\" from group \"sudo\""
 deluser waggle sudo
 
 set -e
-
-
-### disallow root access
-sed -i 's/^\(PermitRootLogin\) .*/\1 no/' /etc/ssh/sshd_config
 
 ### default password
 echo waggle:waggle | chpasswd
