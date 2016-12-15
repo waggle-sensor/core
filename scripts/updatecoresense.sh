@@ -14,3 +14,9 @@ sleep 2
 
 #then call coresense flash
 ./coresenseflash /tmp/coresense_fw.ino.bin
+sleep 5
+echo ""
+echo ">>>> Waiting for the board to reboot to extract hardware and firmware IDs <<<<"
+echo ""
+sleep 5
+python ./coresense_extract_id.py
