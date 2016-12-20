@@ -169,11 +169,11 @@ chown waggle:waggle /home/waggle/.ssh/ /home/waggle/.ssh/authorized_keys
 # Setup a proper terminal emulator
 fgrep 'export TERM' /home/waggle/.bashrc && true
 if [ $? -eq 1 ]; then
-  echo 'export TERM=vt100' > /home/waggle/.bashrc
+  echo 'export TERM=vt100' >> /home/waggle/.bashrc
 fi
 fgrep 'export TERM' /root/.bashrc && true
 if [ $? -eq 1 ]; then
-  echo 'export TERM=vt100' > /root/.bashrc
+  echo 'export TERM=vt100' >> /root/.bashrc
 fi
 
 ### for paranoids
