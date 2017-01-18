@@ -13,20 +13,10 @@ if [ "x$ODROID_MODEL" == "xODROIDC" ]; then
   SERVER_HOST=`cat $server_hostname_file`
 fi
 
+CHECK_INTERVAL='24h'
 
 try_set_time()
 {
-  # check if time is needed
-  #CURRENT_YEAR=$(date +"%Y")
-  #if [ "${CURRENT_YEAR}x" == "x" ] ; then
-  #  CURRENT_YEAR=0
-  #fi
-  #if [ ! ${CURRENT_YEAR} -lt ${REFERENCE_YEAR} ] ; then
-  #  echo "date seems to be ok"
-  #  return 0
-  #fi
-  #echo "Device seems to have the wrong date: year=${CURRENT_YEAR}"
-
   wagman_date=0
   unset date
 
@@ -41,20 +31,36 @@ try_set_time()
       return ${EXIT_CODE}
     fi
   else
-    curl_out=$(curl -s --connect-timeout 10 --retry 100 --retry-delay 10 http://${SERVER_HOST}/api/1/epoch | tr '\n' ' ') || true
-    date=$(python -c "import json; print(json.loads('${curl_out}')['epoch'])") || unset date
+    curl_out=$(curl -s --max-time 10 --connect-timeout 10 http://${SERVER_HOST}/api/1/epoch)
+    EXIT_CODE=$?
+    if [ ${EXIT_CODE} -eq 0 ] ; then
+      date_json=$(echo $curl_out | tr '\n' ' ')
+      date=$(python -c "import json; print(json.loads('${date_json}')['epoch'])") || unset date
+    else
+      unset date
+    fi
   fi
   set -e
 
   # if date is not empty, set date
   if [ ! "${date}x" == "x" ] ; then
+    CHECK_INTERVAL='24h'
     set -x
     date -s@${date}
     EXIT_CODE=$?
     if [ ${EXIT_CODE} -ne 0 ] ; then
        return ${EXIT_CODE}
     fi
+
+    # Update the WagMan date when necessary
+    if [[ "x$ODROID_MODEL" == "xODROIDC" && $date -gt $wagman_date ]]; then
+      wagman-client date $(date +"%Y %m %d %H %M %S") || true
+    fi
+
+    # Sync the system time with the hardware clock
+    hwclock -w
   elif [ "x$ODROID_MODEL" == "xODROIDC" ]; then
+    CHECK_INTERVAL='10'
     wagman_date=$(wagman-client epoch) || wagman_date=0
     system_date=$(date +%s)
     wagman_build_date=$(wagman-client ver | sed -n -e 's/time //p') || wagman_build_date=0
@@ -65,11 +71,6 @@ try_set_time()
     IFS=$'\n'
     date=$(echo "${dates[*]}" | sort -nr | head -n1)
     date -s @$date
-  fi
-
-  # Update the WagMan date when necessary
-  if [[ "x$ODROID_MODEL" == "xODROIDC" && $date -gt $wagman_date ]]; then
-    wagman-client date $(date +"%Y %m %d %H %M %S") || true
   fi
 
   return 0
@@ -88,8 +89,8 @@ while [ 1 ] ; do
     sleep 10
   done
 
-  echo "sleep 24h"
-  sleep 24h
+  echo "sleep ${CHECK_INTERVAL}"
+  sleep ${CHECK_INTERVAL}
 done
 
 
