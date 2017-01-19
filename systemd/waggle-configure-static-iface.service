@@ -7,4 +7,4 @@ Type=oneshot
 ExecStart=/usr/lib/waggle/core/scripts/configure-static-iface.sh
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=waggle-core.target
