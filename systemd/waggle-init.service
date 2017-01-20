@@ -1,6 +1,7 @@
 [Unit]
 Description=Initializes Waggle system.
 After=waggle-core.target
+Before=waggle-platform.target
 
 [Service]
 Type=oneshot
@@ -9,3 +10,4 @@ ExecStart=/usr/lib/waggle/core/scripts/waggle_init.sh force
 
 [Install]
 WantedBy=waggle-core.target
+RequiredBy=waggle-platform.target
