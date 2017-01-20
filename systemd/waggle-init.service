@@ -3,6 +3,7 @@ Description=Initializes Waggle system.
 After=waggle-core.target
 
 [Service]
+Type=oneshot
 WorkingDirectory=/usr/lib/waggle/core/
 ExecStart=/usr/lib/waggle/core/scripts/waggle_init.sh force
 
