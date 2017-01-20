@@ -1,5 +1,6 @@
 [Unit]
 Description=Triggers Wagman heartbeat line.
+After=waggle-core.target
 
 [Service]
 WorkingDirectory=/usr/lib/waggle/core/scripts

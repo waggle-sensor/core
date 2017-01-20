@@ -1,5 +1,6 @@
 [Unit]
 Description=Initializes Waggle system.
+After=waggle-core.target
 
 [Service]
 WorkingDirectory=/usr/lib/waggle/core/

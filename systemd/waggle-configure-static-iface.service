@@ -1,5 +1,6 @@
 [Unit]
 Description=Uses the MAC address to setup the static enx* network interface.
+After=waggle-core.target
 Before=networking.service
 
 [Service]
