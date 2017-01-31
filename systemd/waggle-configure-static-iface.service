@@ -1,6 +1,5 @@
 [Unit]
 Description=Uses the MAC address to setup the static enx* network interface.
-After=waggle-core.target
 Before=networking.service
 
 [Service]
@@ -8,4 +7,4 @@ Type=oneshot
 ExecStart=/usr/lib/waggle/core/scripts/configure-static-iface.sh
 
 [Install]
-WantedBy=waggle-core.target
+WantedBy=networking.target
