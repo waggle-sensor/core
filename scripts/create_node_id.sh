@@ -2,23 +2,6 @@
 
 set -e
 
-
-if [ -e /media/boot/boot.ini ] ; then
-  export ODROIDMODEL=`head -n 1 /media/boot/boot.ini | cut -d '-' -f 1`
-
-fi
-
-echo "ODROIDMODEL: $ODROIDMODEL"
-
-if [ $(echo $ODROIDMODEL | grep "^ODROID" | wc -l) -eq 0 ] ; then
-  echo "warning: could not detect ODROID model"
-fi
-
-
-#IS_ODROIDC=$(echo $ODROIDMODEL | grep "^ODROIDC" | wc -l)
-
-
-
 . /usr/lib/waggle/core/scripts/detect_mac_address.sh
 
 # try memory card serial number

@@ -65,43 +65,25 @@ echo "TIME_HIGH : ${TIME_HIGH}"
 ALIVE_FILE=/usr/lib/waggle/core/alive
 touch ${ALIVE_FILE}
 
-# Check if the current device is a C1+ or XU4. 
+# Detect Odroid model
+. /usr/lib/waggle/core/scripts/detect_odroid_model.sh
 
-HEADER=`head -n 1 /media/boot/boot.ini`
-
-DEVICE=""
-
-if [ ${HEADER}x == "ODROIDXU-UBOOT-CONFIGx" ] ; then
-  if [ -e /media/boot/exynos5422-odroidxu3.dtb ] ; then
-    # XU3 and XU4 are identical
-    DEVICE="XU3"
-  fi
-elif [ ${HEADER}x == "ODROIDC-UBOOT-CONFIGx" ] ; then
-
-  DEVICE="C"
-
-
-fi
-
-
-if [ ${DEVICE}x == "x" ] ; then
+if [ ${ODROID_MODEL}x == "x" ] ; then
   echo "Device not recognized"
   exit 1
 fi 
 
 
-if [ ${DEVICE}x == "XU3x" ] ; then
+if [ ${ODROID_MODEL}x == "XU3x" ] ; then
   GPIO_EXPORT=173
   PIN=4
-elif [ ${DEVICE}x == "Cx" ] ; then
+elif [ ${ODROID_MODEL}x == "Cx" ] ; then
   GPIO_EXPORT=74
   PIN=3
 else
-  echo "Device ${DEVICE} not recognized"
+  echo "Device ${ODROID_MODEL} not recognized"
   exit 1
 fi
-
-echo "Detected device: ${DEVICE}"
 
 
 echo "Activating GPIO pin ${PIN} with export number ${GPIO_EXPORT}."
@@ -121,7 +103,7 @@ echo "Starting heartbeat (mode '${MODE}')..."
 
 while [ 1 ] ; do 
   PIN_HIGH=1
-  if [[ ${DEVICE}x == "Cx" && ${MODE} == "wellness"  && -e /root/init_finished ]] ; then
+  if [[ ${ODROID_MODEL}x == "Cx" && ${MODE} == "wellness"  && -e /root/init_finished ]] ; then
     CURRENT_TIME=`date +%s`
     ALIVE_TIME=`stat -c %Y ${ALIVE_FILE}`
     ALIVE_DURATION=`python -c "print(${CURRENT_TIME} - ${ALIVE_TIME})"`
