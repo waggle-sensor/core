@@ -430,7 +430,7 @@ recover_other_disk() {
   fi
 }
 
-sync_ssl_credentials() {
+sync_disks() {
   #
   # sync config and cert files
   #
@@ -440,17 +440,24 @@ sync_ssl_credentials() {
 
     sleep 1
 
-    rsync --archive --update /etc/waggle/ /media/test/etc/waggle
-    rsync --archive --update /media/test/etc/waggle/ /etc/waggle
+    rsync --archive --update /etc/waggle/ ${OTHER_DISK_P2}/etc/waggle
+    rsync --archive --update ${OTHER_DISK_P2}/etc/waggle/ /etc/waggle
 
-    mkdir -p /media/test/usr/lib/waggle/SSL/node /usr/lib/waggle/SSL/node
+    local node_dir=/usr/lib/waggle/SSL/node
+    local other_disk_node_dir=${OTHER_DISK_P2}${node_dir}
+    mkdir -p ${other_disk_node_dir} ${node_dir}
 
-    if [ -e /usr/lib/waggle/SSL/node/ ] ; then
-      rsync --archive --update /usr/lib/waggle/SSL/node/ /media/test/usr/lib/waggle/SSL/node
+    if [ -e ${node_dir}/ ] ; then
+      rsync --archive --update ${node_dir}/ ${other_disk_node_dir}
     fi
 
-    if [ -e /media/test/usr/lib/waggle/SSL/node/ ] ; then
-      rsync --archive --update /media/test/usr/lib/waggle/SSL/node/ /usr/lib/waggle/SSL/node
+    if [ -e ${other_disk_node_dir}/ ] ; then
+      rsync --archive --update ${other_disk_node_dir}/ ${node_dir}
+    fi
+
+    # make sure we don't have an extra copy of the registration key lying around
+    if [ -e ${other_disk_node_dir}/cert.pem && ${other_disk_node_dir}/key.pem ]; then
+      rm -f ${OTHER_DISK_P2}/root/id_rsa_waggle_aot_registration
     fi
 
     if [ ${DEBUG} -eq 1 ] ; then
@@ -459,7 +466,7 @@ sync_ssl_credentials() {
 
     set +e
     while [ $(mount | grep "/media/test" | wc -l) -ne 0 ] ; do
-      umount /media/test
+      umount ${OTHER_DISK_P2}
       sleep 5
     done
     set -e
@@ -547,8 +554,8 @@ else
   echo "all looks good" 
 fi
 
-# make sure both boot media have the node credentials
-sync_ssl_credentials
+# make sure both boot media have the same /etc/waggle contents and node credentials
+sync_disks
 
 touch ${INIT_FINISHED_FILE}
 touch ${INIT_FINISHED_FILE_WAGGLE}
