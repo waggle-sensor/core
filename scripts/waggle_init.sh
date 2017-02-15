@@ -567,6 +567,8 @@ fi
 
 stop_singleton
 
+echo "Done initializing Waggle!"
+
 if [ ${DEBUG} -eq 1 ]; then
   set +e
   shutdown -h now
