@@ -461,7 +461,7 @@ sync_disks() {
     fi
 
     set +e
-    while [ $(mount | grep "/media/test" | wc -l) -ne 0 ] ; do
+    while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
       umount ${OTHER_DISK_P2}
       sleep 5
     done
