@@ -350,7 +350,7 @@ recover_other_disk() {
 
   echo "syncing boot partition files to ${OTHER_DISK_DEVICE_TYPE} card partitions..."  
   cd /media/boot
-  rsync --archive --verbose ./ ${OTHER_DISK_P1} --exclude=./.Spotlight-V100 --exclude=./.fseventsd
+  rsync --archive --verbose ./ ${OTHER_DISK_P1} --exclude=.Spotlight-V100 --exclude=.fseventsd
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     exit $exitcode
@@ -364,7 +364,7 @@ recover_other_disk() {
   fi
   set +e 
   cd /
-  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=./recovery_p1.tar.gz --exclude=./recovery_p1.tar.gz_part --exclude=./recovery_p2.tar.gz_part --exclude=./recovery_p2.tar.gz --exclude='./dev/*' --exclude='./proc/*' --exclude='./sys/*' --exclude='./tmp/*' --exclude='./run/*' --exclude='./mnt/*' --exclude='./media/*' --exclude=./lost+found --exclude='./var/log/upstart/waggle-*' --exclude='./var/cache/apt/*'
+  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/cache/apt/*'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
