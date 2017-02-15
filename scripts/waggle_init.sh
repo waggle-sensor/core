@@ -383,6 +383,7 @@ recover_other_disk() {
   echo "OTHER_DISK_DEVICE_DATA_UUID: ${OTHER_DISK_DEVICE_DATA_UUID}"
   
   # modify boot.ini
+  echo "updating ${OTHER_DISK_DEVICE_TYPE} card's boot.ini with the new data partition UUID..."
   sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DISK_DEVICE_DATA_UUID}'/' ${OTHER_DISK_P1}/boot.ini 
 
   if [ $(grep -v "^#" ${OTHER_DISK_P1}/boot.ini | grep "root=UUID=${OTHER_DISK_DEVICE_DATA_UUID}" | wc -l) -eq 0 ] ; then
@@ -392,14 +393,18 @@ recover_other_disk() {
   fi
 
   # write /etc/fstab
+  echo "updating ${OTHER_DISK_DEVICE_TYPE} card's /etc/fstab with the new partition UUIDs..."
   echo "UUID=${OTHER_DISK_DEVICE_DATA_UUID}	/	ext4	errors=remount-ro,noatime,nodiratime		0 1" > ${OTHER_DISK_P2}/etc/fstab
   echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID}	/media/boot	vfat	defaults,rw,owner,flush,umask=000	0 0" >> ${OTHER_DISK_P2}/etc/fstab
   echo "tmpfs		/tmp	tmpfs	nodev,nosuid,mode=1777			0 0" >> ${OTHER_DISK_P2}/etc/fstab
 
+  echo "removing do_recovery special files..."
   rm -f /root/do_recovery ${OTHER_DISK_P2}/root/do_recovery
 
+  echo "setting ${OTHER_DISK_DEVICE_TYPE} card's hostname..."
   echo "${MAC_STRING}_${OTHER_DISK_DEVICE_TYPE}" > ${OTHER_DISK_P2}/etc/hostname
 
+  echo "unmounting partitions..."
 
   # unmount current disk's boot partition
   while [ $(mount | grep "/media/boot" | wc -l) -ne 0 ] ; do
