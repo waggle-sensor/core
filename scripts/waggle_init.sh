@@ -246,6 +246,7 @@ detect_recovery() {
       return 1
     fi
   fi
+  echo "unmounting boot partition..."
   set +e
   while [ $(mount | grep "${OTHER_DISK_P1}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P1}
@@ -288,6 +289,8 @@ detect_recovery() {
       return 1
     fi
   fi
+
+  echo "unmounting data partition..."
   set +e
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
