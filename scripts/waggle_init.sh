@@ -97,7 +97,7 @@ assert_dependencies() {
     rm -f ${pidfile}
     exit 0
   else
-    echo "other memory card found"
+    echo "${OTHER_DISK_DEVICE_TYPE} memory card found"
   fi
 
   # set -x
@@ -157,7 +157,7 @@ setup_system() {
   #
   # make sure /media/boot and /media/other* are available 
   #
-  echo 'making sure the /media/other* mount points available to use...'
+  echo 'making sure the /media/other* mount points are available to use...'
   local boot_partition=/media/boot
   mkdir -p ${boot_partition}
   set +e
@@ -237,7 +237,7 @@ detect_recovery() {
     echo "!!! Could not mount boot partition"
     return 1
   else
-    echo "Boot partition mounted"
+    echo "boot partition mounted"
 
     if [ -e ${OTHER_DISK_P1}/boot.ini ] ; then
       echo "boot partition looks legit"
@@ -280,7 +280,7 @@ detect_recovery() {
     echo "!!! Could not mount data partition"
     return 1
   else
-    echo "Data partition mounted"
+    echo "data partition mounted"
     if [ -d ${OTHER_DISK_P2}/usr/lib/waggle ] ; then
       echo "data partition looks legit"
     else
