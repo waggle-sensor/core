@@ -523,6 +523,8 @@ rm -f ${INIT_FINISHED_FILE_WAGGLE}
 #   CURRENT_DISK_DEVICE_TYPE, OTHER_DISK_DEVICE, OTHER_DISK_DEVICE_NAME, and OTHER_DISK_DEVICE_TYPE
 detect_system_info
 
+set +e
+
 # keep track of the PID to prevent multiple executions of this script
 start_singleton $FORCE_EXECUTION
 
