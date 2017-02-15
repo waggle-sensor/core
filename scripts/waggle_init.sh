@@ -398,6 +398,16 @@ recover_other_disk() {
   echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID}	/media/boot	vfat	defaults,rw,owner,flush,umask=000	0 0" >> ${OTHER_DISK_P2}/etc/fstab
   echo "tmpfs		/tmp	tmpfs	nodev,nosuid,mode=1777			0 0" >> ${OTHER_DISK_P2}/etc/fstab
 
+  # restart waggle-platform target
+  local restart_waggle_platform=0
+  if [ -e /root/do_recovery ]; then
+    run_mode=$(cat /root/do_recovery)
+    if [ "${run_mode}" == "manual" ]; then
+      echo "restarting waggle-platform systemd target"
+      systemctl isolate waggle-platform
+    fi
+  fi
+
   echo "removing do_recovery special files..."
   rm -f /root/do_recovery ${OTHER_DISK_P2}/root/do_recovery
 
@@ -550,7 +560,13 @@ setup_system
 
 # check various conditions to determine if recovery of the other boot disk is needed
 RECOVERY_NEEDED=0
-if [ ${FORCE_RECOVERY} -eq 0 ]; then
+if [ ${FORCE_RECOVERY} -eq 1 ]; then
+  echo "Recovery requested. Re-running as a service in recovery mode..."
+  echo "*** Use 'journalctl -fu waggle-init' to follow the output. ***"
+  echo "manual" > /root/do_recovery
+  systemctl isolate waggle-core
+  exit 0
+else
   detect_recovery
   RECOVERY_NEEDED=$?
 fi
