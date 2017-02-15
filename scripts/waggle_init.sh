@@ -476,7 +476,7 @@ sync_disks() {
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=rsync_done" || true
   fi
 
-  echo "mounting ${OTHER_DISK_DEVICE_TYPE} data partition..."
+  echo "unmounting ${OTHER_DISK_DEVICE_TYPE} data partition..."
   set +e
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
