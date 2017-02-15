@@ -73,9 +73,7 @@ start_singleton() {
     # ...or delete old process (only if PID is different from ours (happens easily))
     if [ "${oldpid}_" != "$$_"  ] ; then
       echo "Kill other waggle_init process"
-      set +e
       kill -9 ${oldpid}
-      set -e
       sleep 2
       rm -f ${pidfile}
     fi
@@ -99,9 +97,6 @@ assert_dependencies() {
   else
     echo "${OTHER_DISK_DEVICE_TYPE} memory card found"
   fi
-
-  # set -x
-  set -e
 
   #
   # mkdosfs needed to create vfat partition
@@ -160,28 +155,22 @@ setup_system() {
   echo 'making sure the /media/other* mount points are available to use...'
   local boot_partition=/media/boot
   mkdir -p ${boot_partition}
-  set +e
   while [ $(mount | grep "${boot_partition}" | wc -l) -ne 0 ] ; do
     umount ${boot_partition}
     sleep 5
   done
-  set -e
 
   mkdir -p ${OTHER_DISK_P1}
-  set +e
   while [ $(mount | grep "${OTHER_DISK_P1}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P1}
     sleep 5
   done
-  set -e
 
   mkdir -p ${OTHER_DISK_P2}
-  set +e
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
     sleep 5
   done
-  set -e
 
   #
   # umount the other disk partitions by their /dev block devices just in case
@@ -217,7 +206,6 @@ detect_recovery() {
   echo "checking ${OTHER_DISK_DEVICE_TYPE} card's boot partition..."
   if [ $(parted -s -m ${OTHER_DISK_DEVICE} print | grep "^1:.*fat16::;" | wc -l ) -eq 1 ] ; then
     echo "boot partition found"
-    set +e
     fsck.fat -n ${OTHER_DISK_DEVICE}p1
     if [ $? -ne 0 ]  ; then
       echo "!!! fsch.fat returned error"
@@ -225,13 +213,11 @@ detect_recovery() {
     else
       echo "boot partition FAT filesystem OK"
     fi
-    set -e
   else
     echo "!!! boot partition not found"
     return 1
   fi
 
-  set +e
   mount ${OTHER_DISK_DEVICE}p1 ${OTHER_DISK_P1}
   if [ $? -ne 0 ]  ; then
     echo "!!! Could not mount boot partition"
@@ -247,12 +233,10 @@ detect_recovery() {
     fi
   fi
   echo "unmounting boot partition..."
-  set +e
   while [ $(mount | grep "${OTHER_DISK_P1}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P1}
     sleep 5
   done
-  set -e
 
   #
   # Check other data partition
@@ -261,7 +245,6 @@ detect_recovery() {
   echo "checking ${OTHER_DISK_DEVICE_TYPE} card's data partition..."
   if [ $(parted -s -m ${OTHER_DISK_DEVICE} print | grep "^2:.*ext4::;" | wc -l ) -eq 1 ] ; then
     echo "data partition found"
-    set +e
     fsck.ext4 -n ${OTHER_DISK_DEVICE}p2
     if [ $? -ne 0 ]  ; then
       echo "!!! fsck.ext4 returned an error"
@@ -269,13 +252,11 @@ detect_recovery() {
     else
       echo "data partition ext4 filesystem OK"
     fi
-    set -e
   else
     echo "!!! data partition not found"
     return 1
   fi
 
-  set +e
   mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}
   if [ $? -ne 0 ]  ; then
     echo "!!! Could not mount data partition"
@@ -291,12 +272,10 @@ detect_recovery() {
   fi
 
   echo "unmounting data partition..."
-  set +e
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
     sleep 5
   done
-  set -e
 }
 
 recover_other_disk() {
@@ -305,10 +284,10 @@ recover_other_disk() {
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_init" || true
   fi
-  
+
+  # immediately quit if something bad happens during recovery
   set -e
-  # set -x
-  
+
   #wipe first 500MB (do not wipe eMMC on XU4)
   echo "wiping the first 500MB of the ${OTHER_DISK_DEVICE_TYPE} card..."
   if [ "${ODROID_MODEL}x" == "Cx" ] || [ "${OTHER_DISK_DEVICE_TYPE}x" == "SDx" ] ; then
@@ -346,7 +325,6 @@ recover_other_disk() {
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=create_recovery_p1" || true
   fi
-  set +e 
 
   echo "syncing boot partition files to ${OTHER_DISK_DEVICE_TYPE} card partitions..."  
   cd /media/boot
@@ -355,14 +333,12 @@ recover_other_disk() {
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     exit $exitcode
   fi
-  set -e
   touch ${OTHER_DISK_P1}/recovered.txt
 
   echo "syncing data partition files to ${OTHER_DISK_DEVICE_TYPE} card partitions..."  
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=create_recovery_p2" || true
   fi
-  set +e 
   cd /
   rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/cache/apt/*' --exclude='var/log/*'
   exitcode=$?
@@ -417,27 +393,23 @@ recover_other_disk() {
   echo "unmounting partitions..."
 
   # unmount current disk's boot partition
+  set +e
   while [ $(mount | grep "/media/boot" | wc -l) -ne 0 ] ; do
     umount /media/boot
     sleep 5
   done
-  set -e
 
   # unmount other disk's boot partition
-  set +e
   while [ $(mount | grep "${OTHER_DISK_P1}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P1}
     sleep 5
   done
-  set -e
   
   # unmount other disk's data partition
-  set +e
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
     sleep 5
   done
-  set -e
 
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_done" || true
@@ -454,6 +426,9 @@ sync_disks() {
   if [ ! -e ${OTHER_DISK_DEVICE}p2 ] ; then
     return 0
   fi
+
+  # immediately quit if something bad happens during disk syncing
+  set -e
 
   echo "mounting ${OTHER_DISK_DEVICE_TYPE} data partition..."
   mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
@@ -492,7 +467,6 @@ sync_disks() {
     umount ${OTHER_DISK_P2}
     sleep 5
   done
-  set -e
 }
 
 stop_singleton() {
@@ -541,8 +515,8 @@ fi
 
 echo "starting waggle_init.sh"
 
-rm ${INIT_FINISHED_FILE}
-rm ${INIT_FINISHED_FILE_WAGGLE}
+rm -f ${INIT_FINISHED_FILE}
+rm -f ${INIT_FINISHED_FILE_WAGGLE}
 
 # set the following global variables:
 #   ODROID_MODEL, MAC_ADDRESS, MAC_STRING, CURRENT_DISK_DEVICE, CURRENT_DISK_DEVICE_NAME,
