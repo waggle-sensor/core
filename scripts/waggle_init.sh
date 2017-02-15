@@ -385,7 +385,7 @@ recover_other_disk() {
   # modify boot.ini
   sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DISK_DEVICE_DATA_UUID}'/' ${OTHER_DISK_P1}/boot.ini 
 
-  if [ $(grep -v "^#" ${OTHER_DISK_P2}/boot.ini | grep "root=UUID=${OTHER_DISK_DEVICE_DATA_UUID}" | wc -l) -eq 0 ] ; then
+  if [ $(grep -v "^#" ${OTHER_DISK_P1}/boot.ini | grep "root=UUID=${OTHER_DISK_DEVICE_DATA_UUID}" | wc -l) -eq 0 ] ; then
       echo "Error: boot.ini does not have new UUID in bootargs or bootrootfs"
       rm -f ${pidfile}
       exit 1
