@@ -432,50 +432,57 @@ recover_other_disk() {
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_done" || true
   fi
+
+  echo "done recovering the ${OTHER_DISK_DEVICE_TYPE} card"
 }
 
 sync_disks() {
   #
   # sync config and cert files
   #
-      
-  if [ -e ${OTHER_DISK_DEVICE}p2 ] ; then    
-    mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
 
-    sleep 1
-
-    rsync --archive --update /etc/waggle/ ${OTHER_DISK_P2}/etc/waggle
-    rsync --archive --update ${OTHER_DISK_P2}/etc/waggle/ /etc/waggle
-
-    local node_dir=/usr/lib/waggle/SSL/node
-    local other_disk_node_dir=${OTHER_DISK_P2}${node_dir}
-    mkdir -p ${other_disk_node_dir} ${node_dir}
-
-    if [ -e ${node_dir}/ ] ; then
-      rsync --archive --update ${node_dir}/ ${other_disk_node_dir}
-    fi
-
-    if [ -e ${other_disk_node_dir}/ ] ; then
-      rsync --archive --update ${other_disk_node_dir}/ ${node_dir}
-    fi
-
-    # make sure we don't have an extra copy of the registration key lying around
-    if [[ -e ${other_disk_node_dir}/cert.pem && ${other_disk_node_dir}/key.pem ]]; then
-      rm -f ${OTHER_DISK_P2}/root/id_rsa_waggle_aot_registration
-    fi
-
-    if [ ${DEBUG} -eq 1 ]; then
-      curl --retry 10 "${DEBUG_HOST}/failovertest?status=rsync_done" || true
-    fi
-
-    set +e
-    while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
-      umount ${OTHER_DISK_P2}
-      sleep 5
-    done
-    set -e
-
+  if [ ! -e ${OTHER_DISK_DEVICE}p2 ] ; then
+    return 0
   fi
+
+  echo "mounting ${OTHER_DISK_DEVICE_TYPE} data partition..."
+  mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
+
+  sleep 1
+
+  echo "syncing /etc/waggle on both disk media..."
+  rsync --archive --update /etc/waggle/ ${OTHER_DISK_P2}/etc/waggle
+  rsync --archive --update ${OTHER_DISK_P2}/etc/waggle/ /etc/waggle
+
+  local node_dir=/usr/lib/waggle/SSL/node
+  local other_disk_node_dir=${OTHER_DISK_P2}${node_dir}
+  echo "syncing ${node_dir} on both disk media..."
+  mkdir -p ${other_disk_node_dir} ${node_dir}
+  if [ -e ${node_dir}/ ] ; then
+    rsync --archive --update ${node_dir}/ ${other_disk_node_dir}
+  fi
+
+  if [ -e ${other_disk_node_dir}/ ] ; then
+    rsync --archive --update ${other_disk_node_dir}/ ${node_dir}
+  fi
+
+  # make sure we don't have an extra copy of the registration key lying around
+  echo "remove any lingering registration key files..."
+  if [[ -e ${other_disk_node_dir}/cert.pem && ${other_disk_node_dir}/key.pem ]]; then
+    rm -f ${OTHER_DISK_P2}/root/id_rsa_waggle_aot_registration
+  fi
+
+  if [ ${DEBUG} -eq 1 ]; then
+    curl --retry 10 "${DEBUG_HOST}/failovertest?status=rsync_done" || true
+  fi
+
+  echo "mounting ${OTHER_DISK_DEVICE_TYPE} data partition..."
+  set +e
+  while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P2}
+    sleep 5
+  done
+  set -e
 }
 
 stop_singleton() {
@@ -556,10 +563,10 @@ else
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_not_needed" || true
   fi    
   echo "all looks good" 
-fi
 
-# make sure both boot media have the same /etc/waggle contents and node credentials
-sync_disks
+  # make sure both boot media have the same /etc/waggle contents and node credentials
+  sync_disks
+fi
 
 touch ${INIT_FINISHED_FILE}
 touch ${INIT_FINISHED_FILE_WAGGLE}
