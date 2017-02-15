@@ -364,7 +364,7 @@ recover_other_disk() {
   fi
   set +e 
   cd /
-  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/cache/apt/*'
+  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/cache/apt/*' --exclude='var/log/*'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
