@@ -31,17 +31,10 @@ fi
 touch ${current_dir}/alive
 
 set -x
-#mkdir -p /etc/supervisor/conf.d/
 mkdir -p /var/log/waggle/
 
-#ln -sf ${current_dir}/supervisor/heartbeat.conf /etc/supervisor/conf.d/heartbeat.conf
-rm -f /etc/supervisor/conf.d/heartbeat.conf
-
-# copy upstart scripts
-#cp ${current_dir}/upstart/waggle-* /etc/init/
-
 # copy systemd scripts
-cp ${current_dir}/etc/systemd/system/waggle-* /etc/systemd/system
+cp ${current_dir}/etc/systemd/system/* /etc/systemd/system
 systemctl enable waggle-epoch.service
 systemctl enable waggle-heartbeat.service
 systemctl enable waggle-init.service
