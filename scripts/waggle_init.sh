@@ -91,14 +91,16 @@ assert_dependencies() {
   # Test if other memory card actually exists
   #
   if [ ! -e ${OTHER_DISK_DEVICE} ] ; then
-    echo "Other memory card not found."
+    echo "other memory card not found."
     
     echo "Exit."
     rm -f ${pidfile}
     exit 0
+  else
+    echo "other memory card found"
   fi
 
-  set -x
+  # set -x
   set -e
 
   #
@@ -108,12 +110,14 @@ assert_dependencies() {
     echo "mkdosfs not found (apt-get install -y dosfstools)"
     rm -f ${pidfile}
     exit 1
+  else
+    echo "found mkdosfs"
   fi
 }
 
 setup_system() {
   if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "SDx" ] || [ "${CURRENT_DISK_DEVICE_TYPE}x" == "MMCx" ] ; then
-
+    echo "saving current disk device type to /etc/waggle/current_memory_device"
     echo -e "#e.g. 'SD' or 'MMC'\n${CURRENT_DISK_DEVICE_TYPE}" > /etc/waggle/current_memory_device
   else
     echo "error: memory device not recognized: ${CURRENT_DISK_DEVICE_TYPE}"
@@ -130,7 +134,7 @@ setup_system() {
       
       if [ "${NEW_HOSTNAME}x" != "${OLD_HOSTNAME}x" ] ; then
         echo ${NEW_HOSTNAME} > /etc/hostname
-        echo "NEW_HOSTNAME: ${NEW_HOSTNAME}"
+        echo "setting hostname to '${NEW_HOSTNAME}'"
         hostname -F /etc/hostname
       fi
       
@@ -151,8 +155,18 @@ setup_system() {
   /usr/lib/waggle/core/scripts/create_node_id.sh
 
   #
-  # make sure /media/other* are available 
+  # make sure /media/boot and /media/other* are available 
   #
+  echo 'making sure the /media/other* mount points available to use...'
+  local boot_partition=/media/boot
+  mkdir -p ${boot_partition}
+  set +e
+  while [ $(mount | grep "${boot_partition}" | wc -l) -ne 0 ] ; do
+    umount ${boot_partition}
+    sleep 5
+  done
+  set -e
+
   mkdir -p ${OTHER_DISK_P1}
   set +e
   while [ $(mount | grep "${OTHER_DISK_P1}" | wc -l) -ne 0 ] ; do
@@ -160,6 +174,7 @@ setup_system() {
     sleep 5
   done
   set -e
+
   mkdir -p ${OTHER_DISK_P2}
   set +e
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
@@ -171,6 +186,12 @@ setup_system() {
   #
   # umount the other disk partitions by their /dev block devices just in case
   #
+  for device in $(mount | grep "^${CURRENT_DISK_DEVICE}/p1" | cut -f1 -d ' ') ; do
+    echo "Warning, device ${device} is currently mounted"
+    umount ${device}
+    sleep 5
+  done
+
   for device in $(mount | grep "^${OTHER_DISK_DEVICE}" | cut -f1 -d ' ') ; do 
     echo "Warning, device ${device} is currently mounted"
     umount ${device}
@@ -185,6 +206,7 @@ setup_system() {
 }
 
 detect_recovery() {
+  echo "checking for /root/do_recovery..."
   if [[ -e /root/do_recovery || ${DEBUG} -eq 1 ]] ; then
     return 1
   fi
@@ -192,14 +214,16 @@ detect_recovery() {
   #
   # Check other boot partition
   #
-  local boot_partition_exists=0
+  echo "checking ${OTHER_DISK_DEVICE_TYPE} card's boot partition..."
   if [ $(parted -s -m ${OTHER_DISK_DEVICE} print | grep "^1:.*fat16::;" | wc -l ) -eq 1 ] ; then
     echo "boot partition found"
     set +e
-    fsck.fat -n /dev/mmcblk1p1
+    fsck.fat -n ${OTHER_DISK_DEVICE}p1
     if [ $? -ne 0 ]  ; then
       echo "!!! fsch.fat returned error"
       return 1
+    else
+      echo "boot partition FAT filesystem OK"
     fi
     set -e
   else
@@ -233,6 +257,7 @@ detect_recovery() {
   # Check other data partition
   #
 
+  echo "checking ${OTHER_DISK_DEVICE_TYPE} card's data partition..."
   if [ $(parted -s -m ${OTHER_DISK_DEVICE} print | grep "^2:.*ext4::;" | wc -l ) -eq 1 ] ; then
     echo "data partition found"
     set +e
@@ -240,6 +265,8 @@ detect_recovery() {
     if [ $? -ne 0 ]  ; then
       echo "!!! fsck.ext4 returned an error"
       return 1
+    else
+      echo "data partition ext4 filesystem OK"
     fi
     set -e
   else
@@ -270,22 +297,17 @@ detect_recovery() {
 }
 
 recover_other_disk() {
-  echo "Warning: Recovery needed !"
-
-  if [ ${DEBUG} -eq 1 ] ; then
-    curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_needed" || true
-  fi
-
-  echo "recovering..."
+  echo "recovering the ${OTHER_DISK_DEVICE_TYPE} card..."
   
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_init" || true
   fi
   
   set -e
-  set -x
+  # set -x
   
   #wipe first 500MB (do not wipe eMMC on XU4)
+  echo "wiping the first 500MB of the ${OTHER_DISK_DEVICE_TYPE} card..."
   if [ "${ODROID_MODEL}x" == "Cx" ] || [ "${OTHER_DISK_DEVICE_TYPE}x" == "SDx" ] ; then
     dd if=/dev/zero of=${OTHER_DISK_DEVICE} bs=1M count=500
     sync
@@ -294,89 +316,59 @@ recover_other_disk() {
   
   # write boot loader and u-boot files (this is an odroid script)
   
-  
+
+  echo "creating ${OTHER_DISK_DEVICE_TYPE} card's partitions..."  
   cd /usr/lib/waggle/core/setup-disk/
   #./write-boot.sh ${OTHER_DISK_DEVICE}
   ./make-partitions.sh  ${OTHER_DISK_DEVICE}
   sleep 3
   
+  echo "writing ${OTHER_DISK_DEVICE_TYPE} card's boot loader..."  
   if [ "${ODROID_MODEL}x" == "Cx" ] ; then
     cd /usr/share/c1_uboot
     ./sd_fusing.sh ${OTHER_DISK_DEVICE}
-  fi
-  
-  if [ "${ODROID_MODEL}x" == "XU3x" ] ; then
+  elif [ "${ODROID_MODEL}x" == "XU3x" ] ; then
       cd /usr/lib/waggle/core/setup-disk/xu3
       ./sd_fusing.sh ${OTHER_DISK_DEVICE}
   fi
 
+  mount ${CURRENT_DISK_DEVICE}p1 /media/boot
+  mount ${OTHER_DISK_DEVICE}p1 ${OTHER_DISK_P1}/
   mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
 
   #
   # create recovery files for partitions
   #
+  echo "creating ${OTHER_DISK_DEVICE_TYPE} card's partitions..."  
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=create_recovery_p1" || true
   fi
-  rm -f  ${OTHER_DISK_P2}/recovery_p1.tar.gz_part
   set +e 
-  tar -cvpzf ${OTHER_DISK_P2}/recovery_p1.tar.gz_part --exclude=./.Spotlight-V100 --exclude=./.fseventsd --exclude=./.Trashes --one-file-system --directory=/media/boot .
+
+  echo "syncing boot partition files to ${OTHER_DISK_DEVICE_TYPE} card partitions..."  
+  cd /media/boot
+  rsync --archive --verbose ./ ${OTHER_DISK_P1} --exclude=./.Spotlight-V100 --exclude=./.fseventsd
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     exit $exitcode
   fi
   set -e
+  touch ${OTHER_DISK_P1}/recovered.txt
 
+  echo "syncing data partition files to ${OTHER_DISK_DEVICE_TYPE} card partitions..."  
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=create_recovery_p2" || true
   fi
-  rm -f  ${OTHER_DISK_P2}/recovery_p2.tar.gz_part
   set +e 
-  GZIP=-1 tar -cvpzf ${OTHER_DISK_P2}/recovery_p2.tar.gz_part --warning=no-file-changed --exclude=/recovery_p1.tar.gz --exclude=/recovery_p1.tar.gz_part --exclude=/recovery_p2.tar.gz_part --exclude=/recovery_p2.tar.gz --exclude=/dev/* --exclude=/proc/* --exclude=/sys/* --exclude=/tmp/* --exclude=/run/* --exclude=/mnt/* --exclude=/media/* --exclude=/lost+found --exclude=/var/log/upstart/waggle-* --exclude=/var/cache/apt/* --one-file-system /
+  cd /
+  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=./recovery_p1.tar.gz --exclude=./recovery_p1.tar.gz_part --exclude=./recovery_p2.tar.gz_part --exclude=./recovery_p2.tar.gz --exclude='./dev/*' --exclude='./proc/*' --exclude='./sys/*' --exclude='./tmp/*' --exclude='./run/*' --exclude='./mnt/*' --exclude='./media/*' --exclude=./lost+found --exclude='./var/log/upstart/waggle-*' --exclude='./var/cache/apt/*'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
     exit $exitcode
   fi
-
-  while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
-    umount ${OTHER_DISK_P2}
-    sleep 5
-  done
-  set -e
-
-  #
-  # restore boot partition from recovery file
-  #
-  mount ${OTHER_DISK_DEVICE}p1 ${OTHER_DISK_P1}/
-  cd ${OTHER_DISK_P1}
-  tar xvzf ${OTHER_DISK_P2}/recovery_p1.tar.gz
-  
-  touch ${OTHER_DISK_P1}/recovered.txt
-  
-  cd /media
-  sleep 1
-
-  #
-  # restore boot partition from recovery file
-  #
-  mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
-  cd ${OTHER_DISK_P2}
-  tar xvzf ${OTHER_DISK_P2}/recovery_p2.tar.gz
-
   mkdir -p sys tmp run mnt media dev proc
-
-  mkdir -p ${OTHER_DISK_P2}/usr/lib/waggle/SSL/node
-  if [ -d /usr/lib/waggle/SSL/node ] ; then
-      for file in $(ls -1 /usr/lib/waggle/SSL/node/) ; do
-        cp /usr/lib/waggle/SSL/node/${file} ${OTHER_DISK_P2}/usr/lib/waggle/SSL/node
-      done
-  fi
-
   touch ${OTHER_DISK_P2}/recovered.txt
-  
-  cd /media
-  sleep 1
   
   #
   # indicate recovery process completed
@@ -404,7 +396,15 @@ recover_other_disk() {
   rm -f /root/do_recovery ${OTHER_DISK_P2}/root/do_recovery
 
   echo "${MAC_STRING}_${OTHER_DISK_DEVICE_TYPE}" > ${OTHER_DISK_P2}/etc/hostname
-  
+
+
+  # unmount current disk's boot partition
+  while [ $(mount | grep "/media/boot" | wc -l) -ne 0 ] ; do
+    umount /media/boot
+    sleep 5
+  done
+  set -e
+
   # unmount other disk's boot partition
   set +e
   while [ $(mount | grep "${OTHER_DISK_P1}" | wc -l) -ne 0 ] ; do
@@ -413,7 +413,7 @@ recover_other_disk() {
   done
   set -e
   
-  # unmount other disk's system partition
+  # unmount other disk's data partition
   set +e
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
