@@ -185,11 +185,7 @@ setup_system() {
 }
 
 detect_recovery() {
-  if [ -e /root/do_recovery ] ; then
-    return 1
-  fi
-
-  if [ ${DEBUG} -eq 1 ] ; then
+  if [[ -e /root/do_recovery || ${DEBUG} -eq 1 ]] ; then
     return 1
   fi
 
@@ -456,11 +452,11 @@ sync_disks() {
     fi
 
     # make sure we don't have an extra copy of the registration key lying around
-    if [ -e ${other_disk_node_dir}/cert.pem && ${other_disk_node_dir}/key.pem ]; then
+    if [[ -e ${other_disk_node_dir}/cert.pem && ${other_disk_node_dir}/key.pem ]]; then
       rm -f ${OTHER_DISK_P2}/root/id_rsa_waggle_aot_registration
     fi
 
-    if [ ${DEBUG} -eq 1 ] ; then
+    if [ ${DEBUG} -eq 1 ]; then
       curl --retry 10 "${DEBUG_HOST}/failovertest?status=rsync_done" || true
     fi
 
