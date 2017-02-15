@@ -3,7 +3,7 @@ Description=Initializes Waggle system.
 
 [Service]
 WorkingDirectory=/usr/lib/waggle/core/
-ExecStart=/usr/lib/waggle/core/scripts/waggle_init.sh force
+ExecStart=/usr/lib/waggle/core/scripts/waggle_init.sh --force
 
 [Install]
 WantedBy=multi-user.target

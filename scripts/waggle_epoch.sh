@@ -3,7 +3,9 @@ set -e
 
 # This script tries to get the time from the beehive server. 
 
-ODROID_MODEL=`head -n 1 /media/boot/boot.ini | cut -d '-' -f 1 | tr -d '\n'`
+# Detect Odroid model
+. /usr/lib/waggle/core/scripts/detect_odroid_model.sh
+        
 NODE_CONTROLLER_IP=`cat /etc/waggle/node_controller_host`
 if [ "x$ODROID_MODEL" == "xODROIDC" ]; then
   server_hostname_file="/etc/waggle/server_host"
