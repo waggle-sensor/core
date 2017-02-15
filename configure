@@ -39,6 +39,7 @@ systemctl enable waggle-epoch.service
 systemctl enable waggle-heartbeat.service
 systemctl enable waggle-init.service
 systemctl enable waggle-configure-static-iface.service
+systemctl enable rabbitmq-server.service
 systemctl set-default waggle-platform
 
 
