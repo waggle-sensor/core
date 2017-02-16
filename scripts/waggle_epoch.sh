@@ -46,7 +46,7 @@ try_set_time()
   # if date is not empty, set date
   if [ ! "${date}x" == "x" ] ; then
     echo "Setting the date/time update interval to 24 hours..."
-    eval ${check_interval}=86400  # 24 hours
+    eval ${__check_interval__}='86400'  # 24 hours
     echo "Setting the system epoch to ${date}..."
     date -s@${date}
     exit_code=$?
@@ -66,7 +66,7 @@ try_set_time()
     hwclock -w
   elif [ "x$ODROID_MODEL" == "xODROIDC" ]; then
     echo "Setting the date/time update interval to 10 seconds..."
-    eval ${check_interval}=10  # 10 seconds
+    eval ${__check_interval__}=10  # 10 seconds
     wagman_date=$(wagman-client epoch) || wagman_date=0
     echo "Wagman epoch: ${wagman_date}"
     system_date=$(date +%s)
