@@ -3,7 +3,6 @@
 
 try_set_time()
 {
-  local __check_interval__=$2
   local node_controller_ip=`cat /etc/waggle/node_controller_host`
   local wagman_date=0
   unset date
@@ -46,7 +45,7 @@ try_set_time()
   # if date is not empty, set date
   if [ ! "${date}x" == "x" ] ; then
     echo "Setting the date/time update interval to 24 hours..."
-    eval ${__check_interval__}='86400'  # 24 hours
+    CHECK_INTERVAL='24h'
     echo "Setting the system epoch to ${date}..."
     date -s@${date}
     exit_code=$?
@@ -66,7 +65,7 @@ try_set_time()
     hwclock -w
   elif [ "x$ODROID_MODEL" == "xODROIDC" ]; then
     echo "Setting the date/time update interval to 10 seconds..."
-    eval ${__check_interval__}=10  # 10 seconds
+    CHECK_INTERVAL='10'  # seconds
     wagman_date=$(wagman-client epoch) || wagman_date=0
     echo "Wagman epoch: ${wagman_date}"
     system_date=$(date +%s)
@@ -94,8 +93,6 @@ echo "detecting Odroid model..."
 
   set +e
 
-  local check_interval
-
   echo "entering main time check loop..."
   while [ 1 ] ; do
     while [ 1 ] ; do
@@ -110,9 +107,11 @@ echo "detecting Odroid model..."
       fi
     done
 
-    echo "The next time update will be in ${check_interval} seconds."
+    echo "Waiting for next time update cycle..."
     sleep ${check_interval}
   done
 }
+
+CHECK_INTERVAL='24h'
 
 main
