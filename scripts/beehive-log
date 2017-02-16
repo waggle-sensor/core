@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+import pika
+import time
+import argparse
+
+
+def connect(url, max_retries=10, max_backoff=300):
+    backoff = 1
+
+    for retry in range(max_retries):
+        try:
+            return pika.BlockingConnection(pika.URLParameters(url))
+        except pika.exceptions.ConnectionClosed:
+            time.sleep(backoff)
+            backoff = min(2 * backoff, max_backoff)
+
+    raise RuntimeError('Too many attempts to connect to RabbitMQ.')
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--url', default='amqp://localhost', help='amqp target url')
+parser.add_argument('--exchange', default='logs.fanout', help='amqp target exchange')
+
+parser.add_argument('-t', '--identifier', default='', help='log name')
+parser.add_argument('-p', '--priority', default='info', help='log priority')
+
+parser.add_argument('--max-retries', type=int, default=10, help='max retries')
+parser.add_argument('--max-backoff', type=int, default=300, help='max backoff seconds')
+
+parser.add_argument('message', nargs='+', default='', help='log message')
+
+args = parser.parse_args()
+
+body = ' '.join(args.message)
+
+connection = connect(args.url, args.max_retries, args.max_backoff)
+channel = connection.channel()
+
+headers = {
+    'priority': args.priority,
+}
+
+properties = pika.BasicProperties(app_id=args.identifier,
+                                  delivery_mode=2,
+                                  headers=headers)
+
+channel.basic_publish(exchange=args.exchange,
+                      routing_key=args.identifier,
+                      body=body,
+                      properties=properties)
