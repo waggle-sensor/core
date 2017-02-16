@@ -20,7 +20,7 @@ try_set_time()
       echo "Warning: Failed to get the time from the Node Controller."
       return ${exit_code}
     fi
-  elif [ "x$ODROID_MODEL" == "xODROIDC" ]; then
+  elif [ "x$ODROID_MODEL" == "xC" ]; then
     echo "On a C1+. Getting the epoch from Beehive..."
     local server_hostname_file="/etc/waggle/server_host"
     while [ ! -e $server_hostname_file ]; do
