@@ -95,15 +95,17 @@ echo "detecting Odroid model..."
 
   echo "entering main time check loop..."
   while [ 1 ] ; do
-    while [ 1 ] ; do
+    local retry=1
+    while [ ${retry} -eq 1 ] ; do
       echo "attempting to set the time..."
       try_set_time check_interval
-      if [ $? -ne 0 ] ; then
+      if [ $? -eq 0 ] ; then
+        echo "Successfully updated dates/times."
+        retry=0
+      else
         # did not set time, will try again.
         echo "failed to set time. retrying in 10 seconds..."
         sleep 10
-      else
-        echo "Successfully updated dates/times."
       fi
     done
 
