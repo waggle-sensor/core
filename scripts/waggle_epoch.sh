@@ -110,7 +110,7 @@ echo "detecting Odroid model..."
     done
 
     echo "Waiting for next time update cycle..."
-    sleep ${check_interval}
+    sleep ${CHECK_INTERVAL}
   done
 }
 
