@@ -380,7 +380,7 @@ recover_other_disk() {
     run_mode=$(cat /root/do_recovery)
     if [ "${run_mode}" == "manual" ]; then
       echo "restarting waggle-platform systemd target"
-      systemctl isolate waggle-platform
+      systemctl isolate waggle-platform &  # this blocks on waggle-init, so run in the background
     fi
   fi
 
@@ -541,6 +541,7 @@ if [ ${FORCE_RECOVERY} -eq 1 ]; then
   echo "*** Use 'journalctl -fu waggle-init' to follow the output. ***"
   echo "manual" > /root/do_recovery
   systemctl isolate waggle-core
+
   exit 0
 else
   detect_recovery
