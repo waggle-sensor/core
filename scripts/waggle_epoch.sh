@@ -109,7 +109,7 @@ echo "detecting Odroid model..."
       fi
     done
 
-    echo "Waiting for next time update cycle..."
+    echo "Waiting for next date/time update cycle..."
     sleep ${CHECK_INTERVAL}
   done
 }
