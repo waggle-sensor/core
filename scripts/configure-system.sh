@@ -166,7 +166,3 @@ fi
 ### for paranoids
 echo > /root/.bash_history
 echo > /home/waggle/.bash_history
-
-set +e
-
-${script_dir}/setup-rabbitmq.sh
