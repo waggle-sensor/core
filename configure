@@ -33,12 +33,15 @@ touch ${current_dir}/alive
 set -x
 mkdir -p /var/log/waggle/
 
+# cleanup original RabbitMQ service definition
+systemctl disable rabbitmq-server.service
+rm -f /etc/init.d/rabbitmq-server
+
 # copy systemd scripts
 cp ${current_dir}/etc/systemd/system/* /etc/systemd/system
 systemctl enable waggle-epoch.service
 systemctl enable waggle-heartbeat.service
 systemctl enable waggle-init.service
-systemctl enable waggle-configure-static-iface.service
 systemctl enable rabbitmq-server.service
 systemctl set-default waggle-platform
 
