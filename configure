@@ -42,9 +42,12 @@ systemctl enable waggle-configure-static-iface.service
 systemctl enable rabbitmq-server.service
 systemctl set-default waggle-platform
 
+# copy udev rules
+cp ${current_dir}/etc/udev/rules.d/* /etc/udev/rules.d
 
-ln -sf ${current_dir}/scripts/waggle-service.py /usr/bin/waggle-service
-cp ${current_dir}/bash_completion/waggle-service /etc/bash_completion.d/
+# setup .screen
+ln -sf ${current_dir}/etc/dot_screen /home/waggle/.screen
+ln -sf ${current_dir}/etc/dot_screen /root/.screen
 
 set +x
 

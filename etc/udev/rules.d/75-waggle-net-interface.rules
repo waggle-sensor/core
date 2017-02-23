@@ -1,0 +1,3 @@
+SUBSYSTEM!="usb", ACTION!="add", GOTO="rules_end"
+SUBSYSTEM=="net" ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8153", RUN+="/usr/lib/waggle/core/scripts/configure-static-iface.sh"
+LABEL="rules_end"
