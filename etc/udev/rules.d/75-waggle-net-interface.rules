@@ -1,1 +1,0 @@
-SUBSYSTEM=="net", KERNELS=="6-1:1.0", RUN+="/bin/sed -i -e s/INTERFACE/$env{INTERFACE}/ /etc/network/interfaces"

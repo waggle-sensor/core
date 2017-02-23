@@ -45,9 +45,6 @@ systemctl enable waggle-init.service
 systemctl enable rabbitmq-server.service
 systemctl set-default waggle-platform
 
-# copy udev rules
-cp ${current_dir}/etc/udev/rules.d/* /etc/udev/rules.d
-
 # setup .screen
 ln -sf ${current_dir}/etc/dot_screen /home/waggle/.screen
 ln -sf ${current_dir}/etc/dot_screen /root/.screen
