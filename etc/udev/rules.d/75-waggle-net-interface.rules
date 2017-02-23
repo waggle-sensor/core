@@ -1,3 +1,1 @@
-SUBSYSTEM!="usb", ACTION!="add", GOTO="rules_end"
-SUBSYSTEM=="net" ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8153", RUN+="/usr/lib/waggle/core/scripts/configure-static-iface.sh"
-LABEL="rules_end"
+SUBSYSTEM=="net", KERNELS=="6-1:1.0", RUN+="/bin/sed -i -e s/INTERFACE/$env{INTERFACE}/ /etc/network/interfaces"
