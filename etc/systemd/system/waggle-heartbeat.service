@@ -1,5 +1,6 @@
 [Unit]
 Description=Triggers Wagman heartbeat line.
+After=waggle-core.target
 
 [Service]
 WorkingDirectory=/usr/lib/waggle/core/scripts
@@ -9,4 +10,4 @@ Restart=always
 RestartSec=5
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=waggle-core.target

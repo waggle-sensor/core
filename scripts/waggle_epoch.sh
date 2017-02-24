@@ -1,96 +1,119 @@
 #!/bin/bash
-set -e
-
-# This script tries to get the time from the beehive server. 
-
-ODROID_MODEL=`head -n 1 /media/boot/boot.ini | cut -d '-' -f 1 | tr -d '\n'`
-NODE_CONTROLLER_IP=`cat /etc/waggle/node_controller_host`
-if [ "x$ODROID_MODEL" == "xODROIDC" ]; then
-  server_hostname_file="/etc/waggle/server_host"
-  while [ ! -e $server_hostname_file ]; do
-    sleep 1h
-  done
-  SERVER_HOST=`cat $server_hostname_file`
-fi
 
 
 try_set_time()
 {
-  # check if time is needed
-  #CURRENT_YEAR=$(date +"%Y")
-  #if [ "${CURRENT_YEAR}x" == "x" ] ; then
-  #  CURRENT_YEAR=0
-  #fi
-  #if [ ! ${CURRENT_YEAR} -lt ${REFERENCE_YEAR} ] ; then
-  #  echo "date seems to be ok"
-  #  return 0
-  #fi
-  #echo "Device seems to have the wrong date: year=${CURRENT_YEAR}"
-
-  wagman_date=0
+  local node_controller_ip=`cat /etc/waggle/node_controller_host`
+  local wagman_date=0
   unset date
 
   # get epoch from server
-  set +e
+  local exit_code
   if [ "x$ODROID_MODEL" == "xODROIDXU" ]; then
+    echo "On an XU4. Getting the epoch from the Node Controller..."
     date=$(ssh -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node \
       -o "StrictHostKeyChecking no" -o "ConnectTimeout 2" \
-      waggle@${NODE_CONTROLLER_IP} -x date +%s)
-    EXIT_CODE=$?
-    if [ ${EXIT_CODE} -ne 0 ]; then
-      return ${EXIT_CODE}
+      waggle@${node_controller_ip} -x date +%s)
+    exit_code=$?
+    if [ ${exit_code} -ne 0 ]; then
+      echo "Warning: Failed to get the time from the Node Controller."
+      return ${exit_code}
+    fi
+  elif [ "x$ODROID_MODEL" == "xC" ]; then
+    echo "On a C1+. Getting the epoch from Beehive..."
+    local server_hostname_file="/etc/waggle/server_host"
+    while [ ! -e $server_hostname_file ]; do
+      echo "The Beehive hostname has not been set. Retrying in 1 hour..."
+      sleep 1h
+    done
+    local server_host=`cat $server_hostname_file`
+    local curl_out=$(curl -s --max-time 10 --connect-timeout 10 http://${server_host}/api/1/epoch)
+    exit_code=$?
+    if [ ${exit_code} -eq 0 ] ; then
+      date_json=$(echo $curl_out | tr '\n' ' ')
+      date=$(python -c "import json; print(json.loads('${date_json}')['epoch'])") || unset date
+      echo "Got date '${date} from Beehive."
+    else
+      echo "Warning: could not get the epoch from Beehive."
+      unset date
     fi
   else
-    curl_out=$(curl -s --connect-timeout 10 --retry 100 --retry-delay 10 http://${SERVER_HOST}/api/1/epoch | tr '\n' ' ') || true
-    date=$(python -c "import json; print(json.loads('${curl_out}')['epoch'])") || unset date
+    echo "Error: unrecognized Odroid model '${ODROID_MODEL}'"
+    exit 2
   fi
-  set -e
 
   # if date is not empty, set date
   if [ ! "${date}x" == "x" ] ; then
-    set -x
+    echo "Setting the date/time update interval to 24 hours..."
+    CHECK_INTERVAL='24h'
+    echo "Setting the system epoch to ${date}..."
     date -s@${date}
-    EXIT_CODE=$?
-    if [ ${EXIT_CODE} -ne 0 ] ; then
-       return ${EXIT_CODE}
+    exit_code=$?
+    if [ ${exit_code} -ne 0 ] ; then
+      echo "Error: failed to set the system date/time."
+       return ${exit_code}
     fi
+
+    # Update the WagMan date when necessary
+    if [[ "x$ODROID_MODEL" == "xODROIDC" && $date -gt $wagman_date ]]; then
+      echo "Setting the Wagman date/time..."
+      wagman-client date $(date +"%Y %m %d %H %M %S") || true
+    fi
+
+    # Sync the system time with the hardware clock
+    echo "Syncing the hardware clock with the system date/time..."
+    hwclock -w
   elif [ "x$ODROID_MODEL" == "xODROIDC" ]; then
+    echo "Setting the date/time update interval to 10 seconds..."
+    CHECK_INTERVAL='10'  # seconds
     wagman_date=$(wagman-client epoch) || wagman_date=0
+    echo "Wagman epoch: ${wagman_date}"
     system_date=$(date +%s)
+    echo "System epoch: ${system_date}"
     wagman_build_date=$(wagman-client ver | sed -n -e 's/time //p') || wagman_build_date=0
+    echo "Wagman build epoch: ${wagman_build_date}"
     guest_node_date=$(ssh -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node \
                         -o "StrictHostKeyChecking no" -o "ConnectTimeout 30" \
                         waggle@10.31.81.51 -x date +%s) || guest_node_date=0
+    echo "Guest Node epoch: ${guest_node_date}"
     dates=($system_date $wagman_date $wagman_build_date $guest_node_date)
     IFS=$'\n'
     date=$(echo "${dates[*]}" | sort -nr | head -n1)
+    echo "Setting the system epoch to ${date}..."
     date -s @$date
-  fi
-
-  # Update the WagMan date when necessary
-  if [[ "x$ODROID_MODEL" == "xODROIDC" && $date -gt $wagman_date ]]; then
-    wagman-client date $(date +"%Y %m %d %H %M %S") || true
   fi
 
   return 0
 }
 
-########### start ###########
+main() {
+echo "detecting Odroid model..."
+# Detect Odroid model. Sets ODROID_MODEL global variable
+. /usr/lib/waggle/core/scripts/detect_odroid_model.sh
 
-while [ 1 ] ; do
-  
+  set +e
+
+  echo "entering main time check loop..."
   while [ 1 ] ; do
-    try_set_time
-    if [ $? -eq 0 ] ; then
-      break
-    fi
-    # did not set time, will try again.
-    sleep 10
+    local retry=1
+    while [ ${retry} -eq 1 ] ; do
+      echo "attempting to set the time..."
+      try_set_time check_interval
+      if [ $? -eq 0 ] ; then
+        echo "Successfully updated dates/times."
+        retry=0
+      else
+        # did not set time, will try again.
+        echo "failed to set time. retrying in 10 seconds..."
+        sleep 10
+      fi
+    done
+
+    echo "Waiting for next date/time update cycle..."
+    sleep ${CHECK_INTERVAL}
   done
+}
 
-  echo "sleep 24h"
-  sleep 24h
-done
+CHECK_INTERVAL='24h'
 
-
-
+main

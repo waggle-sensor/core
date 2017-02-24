@@ -31,25 +31,23 @@ fi
 touch ${current_dir}/alive
 
 set -x
-#mkdir -p /etc/supervisor/conf.d/
 mkdir -p /var/log/waggle/
 
-#ln -sf ${current_dir}/supervisor/heartbeat.conf /etc/supervisor/conf.d/heartbeat.conf
-rm -f /etc/supervisor/conf.d/heartbeat.conf
-
-# copy upstart scripts
-#cp ${current_dir}/upstart/waggle-* /etc/init/
+# cleanup original RabbitMQ service definition
+systemctl disable rabbitmq-server.service
+rm -f /etc/init.d/rabbitmq-server
 
 # copy systemd scripts
-cp ${current_dir}/systemd/waggle-* /etc/systemd/system
+cp ${current_dir}/etc/systemd/system/* /etc/systemd/system
 systemctl enable waggle-epoch.service
 systemctl enable waggle-heartbeat.service
 systemctl enable waggle-init.service
-systemctl enable waggle-configure-static-iface.service
+systemctl enable rabbitmq-server.service
+systemctl set-default waggle-platform
 
-
-ln -sf ${current_dir}/scripts/waggle-service.py /usr/bin/waggle-service
-cp ${current_dir}/bash_completion/waggle-service /etc/bash_completion.d/
+# setup .screen
+ln -sf ${current_dir}/etc/dot_screen /home/waggle/.screen
+ln -sf ${current_dir}/etc/dot_screen /root/.screen
 
 set +x
 
@@ -58,7 +56,12 @@ echo "     udevadm trigger --subsystem-match=tty --action=add"
 echo ""
 echo "done"
 
-${current_dir}/scripts/install_dependencies.sh
-
 # may want to move into a different script?
 cp ${current_dir}/scripts/rabbitmqadmin /usr/bin
+
+# install the particular version of pywaggle that we tested against
+pywaggle_tag="v0.11.6"
+pip install git+https://github.com/waggle-sensor/pywaggle@${pywaggle_tag}
+pip3 install git+https://github.com/waggle-sensor/pywaggle@${pywaggle_tag}
+
+

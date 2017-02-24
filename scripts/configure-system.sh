@@ -137,23 +137,10 @@ fi
 echo "adding user \"waggle\" to group \"waggle\""
 adduser waggle waggle
 
-echo "removing user \"waggle\" from group \"sudo\""
-deluser waggle sudo
-
 set -e
 
 ### default password
 echo waggle:waggle | chpasswd
-
-aot_root_shadow_file=/root/root_shadow
-if [ -e ${aot_root_shadow_file} ]; then
-  ### AoT password
-  aot_root_shadow_entry=$(cat ${aot_root_shadow_file})
-  sed -i -e "s/^root:..*/${aot_root_shadow_entry}/" /etc/shadow
-else
-  ### default password
-  echo root:waggle | chpasswd
-fi
 
 ### Remove ssh host files. Those will be recreated by the /etc/rc.local script by default.
 rm -f /etc/ssh/ssh_host*
@@ -169,17 +156,13 @@ chown waggle:waggle /home/waggle/.ssh/ /home/waggle/.ssh/authorized_keys
 # Setup a proper terminal emulator
 fgrep 'export TERM' /home/waggle/.bashrc && true
 if [ $? -eq 1 ]; then
-  echo 'export TERM=vt100' > /home/waggle/.bashrc
+  echo 'export TERM=vt100' >> /home/waggle/.bashrc
 fi
 fgrep 'export TERM' /root/.bashrc && true
 if [ $? -eq 1 ]; then
-  echo 'export TERM=vt100' > /root/.bashrc
+  echo 'export TERM=vt100' >> /root/.bashrc
 fi
 
 ### for paranoids
 echo > /root/.bash_history
 echo > /home/waggle/.bash_history
-
-set +e
-
-${script_dir}/setup-rabbitmq.sh
