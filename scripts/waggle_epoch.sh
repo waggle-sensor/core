@@ -9,7 +9,7 @@ try_set_time()
 
   # get epoch from server
   local exit_code
-  if [ "x$ODROID_MODEL" == "xODROIDXU" ]; then
+  if [ "x$ODROID_MODEL" == "xXU3" ]; then
     echo "On an XU4. Getting the epoch from the Node Controller..."
     date=$(ssh -i /usr/lib/waggle/SSL/guest/id_rsa_waggle_aot_guest_node \
       -o "StrictHostKeyChecking no" -o "ConnectTimeout 2" \
