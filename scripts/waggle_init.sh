@@ -84,32 +84,6 @@ start_singleton() {
   echo "$$" > ${pidfile}
 }
 
-assert_dependencies() {
-  #
-  # Test if other memory card actually exists
-  #
-  if [ ! -e ${OTHER_DISK_DEVICE} ] ; then
-    echo "other memory card not found."
-    
-    echo "Exit."
-    rm -f ${pidfile}
-    exit 0
-  else
-    echo "${OTHER_DISK_DEVICE_TYPE} memory card found"
-  fi
-
-  #
-  # mkdosfs needed to create vfat partition
-  #
-  if ! hash mkdosfs > /dev/null 2>&1 ; then  
-    echo "mkdosfs not found (apt-get install -y dosfstools)"
-    rm -f ${pidfile}
-    exit 1
-  else
-    echo "found mkdosfs"
-  fi
-}
-
 setup_system() {
   if [ "${CURRENT_DISK_DEVICE_TYPE}x" == "SDx" ] || [ "${CURRENT_DISK_DEVICE_TYPE}x" == "MMCx" ] ; then
     echo "saving current disk device type to /etc/waggle/current_memory_device"
@@ -148,7 +122,35 @@ setup_system() {
   # create Node ID
   #
   /usr/lib/waggle/core/scripts/create_node_id.sh
+}
 
+assert_dependencies() {
+  #
+  # Test if other memory card actually exists
+  #
+  if [ ! -e ${OTHER_DISK_DEVICE} ] ; then
+    echo "other memory card not found."
+    
+    echo "Exit."
+    rm -f ${pidfile}
+    exit 0
+  else
+    echo "${OTHER_DISK_DEVICE_TYPE} memory card found"
+  fi
+
+  #
+  # mkdosfs needed to create vfat partition
+  #
+  if ! hash mkdosfs > /dev/null 2>&1 ; then  
+    echo "mkdosfs not found (apt-get install -y dosfstools)"
+    rm -f ${pidfile}
+    exit 1
+  else
+    echo "found mkdosfs"
+  fi
+}
+
+prepare_mountpoints() {
   #
   # make sure /media/boot and /media/other* are available 
   #
@@ -528,11 +530,14 @@ set +e
 # keep track of the PID to prevent multiple executions of this script
 start_singleton $FORCE_EXECUTION
 
-# assert that all dependencies for execution have been met
-assert_dependencies
-
 # set the hostname and do some other things
 setup_system
+
+# assert that all dependencies for recovery have been met
+assert_dependencies
+
+# unmount everything all mountpoints we depend on
+prepare_mountpoints
 
 # check various conditions to determine if recovery of the other boot disk is needed
 RECOVERY_NEEDED=0
