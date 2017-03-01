@@ -39,7 +39,6 @@ rm -f /etc/init.d/rabbitmq-server
 
 # copy systemd scripts
 cp ${current_dir}/etc/systemd/system/* /etc/systemd/system
-systemctl enable waggle-epoch.service
 systemctl enable waggle-heartbeat.service
 systemctl enable waggle-init.service
 systemctl enable rabbitmq-server.service
