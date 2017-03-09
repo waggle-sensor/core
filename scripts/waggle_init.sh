@@ -348,8 +348,9 @@ recover_other_disk() {
     # exit code 1 means: Some files differ
     exit $exitcode
   fi
-  mkdir -p sys tmp run mnt media dev proc
-  touch ${OTHER_DISK_P2}/recovered.txt
+  cd ${OTHER_DISK_P2}
+  mkdir -p sys tmp run mnt media dev proc var/log/journal
+  touch recovered.txt
   
   #
   # indicate recovery process completed
