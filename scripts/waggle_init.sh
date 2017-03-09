@@ -199,6 +199,7 @@ prepare_mountpoints() {
 detect_recovery() {
   echo "checking for /root/do_recovery..."
   if [[ -e /root/do_recovery || ${DEBUG} -eq 1 ]] ; then
+    echo "ENABLING RECOVERY: /root/do_recovery exists"
     return 1
   fi
 
@@ -210,19 +211,19 @@ detect_recovery() {
     echo "boot partition found"
     fsck.fat -n ${OTHER_DISK_DEVICE}p1
     if [ $? -ne 0 ]  ; then
-      echo "!!! fsch.fat returned error"
+      echo "ENABLING RECOVERY: fsch.fat returned error"
       return 1
     else
       echo "boot partition FAT filesystem OK"
     fi
   else
-    echo "!!! boot partition not found"
+    echo "ENABLING RECOVERY: boot partition not found"
     return 1
   fi
 
   mount ${OTHER_DISK_DEVICE}p1 ${OTHER_DISK_P1}
   if [ $? -ne 0 ]  ; then
-    echo "!!! Could not mount boot partition"
+    echo "ENABLING RECOVERY: could not mount boot partition"
     return 1
   else
     echo "boot partition mounted"
@@ -230,7 +231,7 @@ detect_recovery() {
     if [ -e ${OTHER_DISK_P1}/boot.ini ] ; then
       echo "boot partition looks legit"
     else
-      echo "!!! boot partition has no boot.ini"
+      echo "ENABLING RECOVERY: boot partition has no boot.ini"
       return 1
     fi
   fi
@@ -249,26 +250,26 @@ detect_recovery() {
     echo "data partition found"
     fsck.ext4 -n ${OTHER_DISK_DEVICE}p2
     if [ $? -ne 0 ]  ; then
-      echo "!!! fsck.ext4 returned an error"
+      echo "ENABLING RECOVERY: fsck.ext4 returned an error"
       return 1
     else
       echo "data partition ext4 filesystem OK"
     fi
   else
-    echo "!!! data partition not found"
+    echo "ENABLING RECOVERY: data partition not found"
     return 1
   fi
 
   mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}
   if [ $? -ne 0 ]  ; then
-    echo "!!! Could not mount data partition"
+    echo "ENABLING RECOVERY: could not mount data partition"
     return 1
   else
     echo "data partition mounted"
     if [ -d ${OTHER_DISK_P2}/usr/lib/waggle ] ; then
       echo "data partition looks legit"
     else
-      echo "!!! data partition has no waggle directory"
+      echo "ENABLING RECOVERY: data partition has no waggle directory"
       return 1
     fi
   fi
