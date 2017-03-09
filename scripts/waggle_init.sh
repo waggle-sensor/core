@@ -352,7 +352,7 @@ recover_other_disk() {
   cd ${OTHER_DISK_P2}
   mkdir -p sys tmp run mnt media dev proc var/log/journal
   touch recovered.txt
-  cd
+  cd /
   
   #
   # indicate recovery process completed
