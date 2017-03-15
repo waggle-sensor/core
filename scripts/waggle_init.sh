@@ -350,7 +350,7 @@ recover_other_disk() {
     exit $exitcode
   fi
   cd ${OTHER_DISK_P2}
-  mkdir -p sys tmp run mnt media dev proc var/log/journal
+  mkdir -p sys tmp run mnt media dev proc var/log/journal var/log/rabbitmq
   touch recovered.txt
   cd /
   
