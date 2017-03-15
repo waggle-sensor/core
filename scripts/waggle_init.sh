@@ -196,13 +196,7 @@ prepare_mountpoints() {
   done
 }
 
-detect_recovery() {
-  echo "checking for /root/do_recovery..."
-  if [[ -e /root/do_recovery || ${DEBUG} -eq 1 ]] ; then
-    echo "ENABLING RECOVERY: /root/do_recovery exists"
-    return 1
-  fi
-
+check_other_partitions() {
   #
   # Check other boot partition
   #
@@ -279,6 +273,17 @@ detect_recovery() {
     umount ${OTHER_DISK_P2}
     sleep 5
   done
+}
+
+detect_recovery() {
+  echo "checking for /root/do_recovery..."
+  if [[ -e /root/do_recovery || ${DEBUG} -eq 1 ]] ; then
+    echo "ENABLING RECOVERY: /root/do_recovery exists"
+    return 1
+  fi
+
+  # check_other_partitions
+  # return $?
 }
 
 recover_other_disk() {
