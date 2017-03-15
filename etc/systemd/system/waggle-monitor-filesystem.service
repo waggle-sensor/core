@@ -1,0 +1,12 @@
+[Unit]
+Description=Monitors file changes of Waggle software.
+After=waggle-platform.target
+
+[Service]
+ExecStart=/usr/lib/waggle/core/scripts/monitor-filesystem-service
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=waggle-platform.target
