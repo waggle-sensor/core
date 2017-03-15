@@ -343,14 +343,14 @@ recover_other_disk() {
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=create_recovery_p2" || true
   fi
   cd /
-  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/cache/apt/*' --exclude='var/log/*'
+  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/cache/apt/*' --include='var/log/journal' --include='/var/log/rabbitmq' --exclude='var/log/*'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
     exit $exitcode
   fi
-  cd ${OTHER_DISK_P2}
-  mkdir -p sys tmp run mnt media dev proc var/log/journal var/log/rabbitmq
+  #cd ${OTHER_DISK_P2}
+  #mkdir -p sys tmp run mnt media dev proc
   touch recovered.txt
   cd /
   
