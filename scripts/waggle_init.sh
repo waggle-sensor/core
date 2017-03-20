@@ -448,9 +448,19 @@ sync_disks() {
   if [ -e ${node_dir}/ ] ; then
     rsync --archive --update ${node_dir}/ ${other_disk_node_dir}
   fi
-
   if [ -e ${other_disk_node_dir}/ ] ; then
     rsync --archive --update ${other_disk_node_dir}/ ${node_dir}
+  fi
+
+  local ca_dir=/usr/lib/waggle/SSL/waggleca
+  local other_disk_ca_dir=${OTHER_DISK_P2}${ca_dir}
+  echo "syncing ${ca_dir} on both disk media..."
+  mkdir -p ${other_disk_ca_dir} ${ca_dir}
+  if [ -e ${ca_dir}/ ] ; then
+    rsync --archive --update ${ca_dir}/ ${other_disk_ca_dir}
+  fi
+  if [ -e ${other_disk_ca_dir}/ ] ; then
+    rsync --archive --update ${other_disk_ca_dir}/ ${ca_dir}
   fi
 
   # make sure we don't have an extra copy of the registration key lying around
