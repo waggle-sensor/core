@@ -451,10 +451,10 @@ sync_disks() {
   echo "syncing ${ssl_dir} on both disk media..."
   mkdir -p ${other_disk_ssl_dir} ${ssl_dir}
   if [ -e ${ssl_dir}/ ] ; then
-    rsync --archive --update ${ssl_dir}/* ${other_disk_ssl_dir}
+    rsync --archive --update ${ssl_dir} ${other_disk_ssl_dir}
   fi
   if [ -e ${other_disk_ssl_dir}/ ] ; then
-    rsync --archive --update ${other_disk_ssl_dir}/* ${ssl_dir}
+    rsync --archive --update ${other_disk_ssl_dir} ${ssl_dir}
   fi
 
   # make sure we don't have an extra copy of the registration key lying around
