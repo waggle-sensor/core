@@ -94,7 +94,7 @@ setup_system() {
   fi
 
   #
-  # set hostname and /etc/hosts
+  # set hostname
   #
   if [ "${MAC_ADDRESS}x" !=  "x" ] ; then
       NEW_HOSTNAME="${MAC_STRING}${CURRENT_DISK_DEVICE_TYPE}"
@@ -106,11 +106,6 @@ setup_system() {
         echo "setting hostname to '${NEW_HOSTNAME}'"
         hostname -F /etc/hostname
       fi
-      
-      # add hostname to /etc/hosts
-      if [ $(grep "127.0.0.1.*${NEW_HOSTNAME}" /etc/hosts | wc -l) -eq 0 ] ; then
-        echo  "127.0.0.1       ${NEW_HOSTNAME}" >> /etc/hosts
-      fi 
        
     if [ ${DEBUG} -eq 1 ] ; then
       curl --retry 10 "${DEBUG_HOST}/failovertest?MAC_ADDRESS=${MAC_ADDRESS}" || true
