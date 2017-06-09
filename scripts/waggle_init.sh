@@ -106,6 +106,9 @@ setup_system() {
         echo "setting hostname to '${NEW_HOSTNAME}'"
         hostname -F /etc/hostname
       fi
+
+      # (re)set the hostname mapping to localhost in the hosts file
+      sed -i -e "s/[0-9a-f]\{12\}\(SD\|MMC\)/${NEW_HOSTNAME}/" -e "s/NODE_HOST/${NEW_HOSTNAME}/" /etc/hosts
        
     if [ ${DEBUG} -eq 1 ] ; then
       curl --retry 10 "${DEBUG_HOST}/failovertest?MAC_ADDRESS=${MAC_ADDRESS}" || true
