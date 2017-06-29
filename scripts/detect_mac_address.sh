@@ -1,32 +1,36 @@
 #!/bin/bash
 
 # returns
-export MAC_ADDRESS=""
-export MAC_STRING="" 
-export NODE_ID="" 
+mac_address=""
+mac_string=""
 
 set +e
-while [ "${MAC_ADDRESS}x" == "x" ] ; do
-  export MAC_ADDRESS=$(ip link | grep '00:1e:06' | awk '{print $2}')
-  export MAC_STRING=$(echo $MAC_ADDRESS | sed 's/://g')
+# All Odroid MAC addresses (so far) have the organizational prefix 00:1e:06
+mac_address=$(ip link | grep -e '00:1e:06' | awk '{print $2}')
+if [ "x$mac_address" == "x" ]; then
+  # Locally Administered Mac Addresses
+  # TODO: look for any addresses in the following form:
+  # x2-xx-xx-xx-xx-xx
+  # x6-xx-xx-xx-xx-xx
+  # xA-xx-xx-xx-xx-xx
+  # xE-xx-xx-xx-xx-xx
+  mac_address=$(ip link | grep -e '02:' | awk '{print $2}')
+fi
+mac_string=$(echo $mac_address | sed 's/://g')
 
-  if [ "${MAC_ADDRESS}x" == "x" ] ; then
-    echo "MAC_ADDRESS not found, retrying..."
-    sleep 3
-  fi
-  
-done
+if [ "${mac_address}x" == "x" ] ; then
+  echo "error: MAC address not found."
+  exit 1
+fi
 set -e
 
+if [ ${#mac_string} -ne 12 ]; then
+  echo "error: bad MAC address '${mac_address}'"
+  exit 2
+fi
+
+export MAC_ADDRESS=$mac_address
+export MAC_STRING=$mac_string
 
 echo "MAC_ADDRESS=${MAC_ADDRESS}"
 echo "MAC_STRING=${MAC_STRING}"
-
-if [ ! ${#MAC_STRING} -ge 12 ]; then
-  echo "error: could not extract MAC address"
-  exit 1
-else
-  NODE_ID="0000${MAC_STRING}"
-fi
-
-echo "NODE_ID=${NODE_ID}"
