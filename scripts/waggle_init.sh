@@ -94,7 +94,7 @@ setup_system() {
   fi
 
   #
-  # set hostname and /etc/hosts
+  # set hostname
   #
   if [ "${MAC_ADDRESS}x" !=  "x" ] ; then
       NEW_HOSTNAME="${MAC_STRING}${CURRENT_DISK_DEVICE_TYPE}"
@@ -106,11 +106,9 @@ setup_system() {
         echo "setting hostname to '${NEW_HOSTNAME}'"
         hostname -F /etc/hostname
       fi
-      
-      # add hostname to /etc/hosts
-      if [ $(grep "127.0.0.1.*${NEW_HOSTNAME}" /etc/hosts | wc -l) -eq 0 ] ; then
-        echo  "127.0.0.1       ${NEW_HOSTNAME}" >> /etc/hosts
-      fi 
+
+      # (re)set the hostname mapping to localhost in the hosts file
+      sed -i -e "s/[0-9a-f]\{12\}\(SD\|MMC\)/${NEW_HOSTNAME}/" -e "s/NODE_HOST/${NEW_HOSTNAME}/" /etc/hosts
        
     if [ ${DEBUG} -eq 1 ] ; then
       curl --retry 10 "${DEBUG_HOST}/failovertest?MAC_ADDRESS=${MAC_ADDRESS}" || true
