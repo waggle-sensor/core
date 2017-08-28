@@ -172,6 +172,12 @@ prepare_mountpoints() {
     sleep 5
   done
 
+  mkdir -p ${OTHER_DISK_P3}
+  while [ $(mount | grep "${OTHER_DISK_P3}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P3}
+    sleep 5
+  done
+
   #
   # umount the other disk partitions by their /dev block devices just in case
   #
@@ -266,9 +272,16 @@ check_other_partitions() {
     fi
   fi
 
+  mount ${OTHER_DISK_DEVICE}p3 ${OTHER_DISK_P3}
+
   echo "unmounting data partition..."
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
+    sleep 5
+  done
+
+  while [ $(mount | grep "${OTHER_DISK_P3}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P3}
     sleep 5
   done
 }
@@ -323,6 +336,7 @@ recover_other_disk() {
   mount ${CURRENT_DISK_DEVICE}p1 /media/boot
   mount ${OTHER_DISK_DEVICE}p1 ${OTHER_DISK_P1}/
   mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
+  mount ${OTHER_DISK_DEVICE}p3 ${OTHER_DISK_P3}/
 
   #
   # create recovery files for partitions
@@ -346,7 +360,7 @@ recover_other_disk() {
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=create_recovery_p2" || true
   fi
   cd /
-  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/cache/apt/*' --exclude='var/log/journal/*' --include='var/log/journal' --exclude='var/log/rabbitmq/*' --include='var/log/rabbitmq' --exclude='var/log/*'
+  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/*' --exclude='srv/*' --exclude='home/*'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
@@ -354,20 +368,59 @@ recover_other_disk() {
   fi
   touch ${OTHER_DISK_P2}/recovered.txt
   
+  if [[ ! -L ./var && -d ./var ]]; then
+    rsync --archive --verbose --one-file-system ./var ${OTHER_DISK_P3} --exclude=lost+found --exclude='var/cache/apt/*' --exclude='var/log/journal/*' --include='var/log/journal' --exclude='var/log/rabbitmq/*' --include='var/log/rabbitmq' --exclude='var/log/*'
+    exitcode=$?
+    if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+      # exit code 1 means: Some files differ
+      exit $exitcode
+    fi
+  fi
+  
+  if [[ ! -L ./home && -d ./home ]]; then
+    rsync --archive --verbose --one-file-system ./home ${OTHER_DISK_P3} --exclude=lost+found
+    exitcode=$?
+    if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+      # exit code 1 means: Some files differ
+      exit $exitcode
+    fi
+  fi
+  if [[ ! -L ./srv && -d ./srv ]]; then
+    rsync --archive --verbose --one-file-system ./srv ${OTHER_DISK_P3} --exclude=lost+found
+    exitcode=$?
+    if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+      # exit code 1 means: Some files differ
+      exit $exitcode
+    fi
+  fi
+
+  cd ${OTHER_DISK_P2}
+  mkdir -p wagglerw
+  rm -rf home
+  rm -rf var 
+  rm -rf srv
+  ln -sf /wagglerw/home home
+  ln -sf /wagglerw/var var
+  ln -sf /wagglerw/srv srv
+  cd /
+  touch ${OTHER_DISK_P3}/recovered.txt
   #
   # indicate recovery process completed
   #
   OTHER_DISK_DEVICE_BOOT_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p1 | grep "^UUID" |  cut -f2 -d '=')
   echo "OTHER_DISK_DEVICE_BOOT_UUID: ${OTHER_DISK_DEVICE_BOOT_UUID}"
   
-  OTHER_DISK_DEVICE_DATA_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p2 | grep "^UUID" |  cut -f2 -d '=')
-  echo "OTHER_DISK_DEVICE_DATA_UUID: ${OTHER_DISK_DEVICE_DATA_UUID}"
+  OTHER_DISK_DEVICE_ROOTFS_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p2 | grep "^UUID" |  cut -f2 -d '=')
+  echo "OTHER_DISK_DEVICE_ROOTFS_UUID: ${OTHER_DISK_DEVICE_ROOTFS_UUID}"
+
+  OTHER_DISK_DEVICE_RW_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p3 | grep "^UUID" |  cut -f2 -d '=')
+  echo "OTHER_DISK_DEVICE_RW_UUID: ${OTHER_DISK_DEVICE_RW_UUID}"
   
   # modify boot.ini
   echo "updating ${OTHER_DISK_DEVICE_TYPE} card's boot.ini with the new data partition UUID..."
-  sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DISK_DEVICE_DATA_UUID}'/' ${OTHER_DISK_P1}/boot.ini 
+  sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DISK_DEVICE_ROOTFS_UUID}'/' ${OTHER_DISK_P1}/boot.ini
 
-  if [ $(grep -v "^#" ${OTHER_DISK_P1}/boot.ini | grep "root=UUID=${OTHER_DISK_DEVICE_DATA_UUID}" | wc -l) -eq 0 ] ; then
+  if [ $(grep -v "^#" ${OTHER_DISK_P1}/boot.ini | grep "root=UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}" | wc -l) -eq 0 ] ; then
       echo "Error: boot.ini does not have new UUID in bootargs or bootrootfs"
       rm -f ${pidfile}
       exit 1
@@ -375,7 +428,8 @@ recover_other_disk() {
 
   # write /etc/fstab
   echo "updating ${OTHER_DISK_DEVICE_TYPE} card's /etc/fstab with the new partition UUIDs..."
-  echo "UUID=${OTHER_DISK_DEVICE_DATA_UUID}	/	ext4	errors=remount-ro,noatime,nodiratime		0 1" > ${OTHER_DISK_P2}/etc/fstab
+  echo "UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}  /       ext4    errors=remount-ro,noatime,nodiratime            0 1" > ${OTHER_DISK_P2}/etc/fstab
+  echo "UUID=${OTHER_DISK_DEVICE_RW_UUID}      /wagglerw       ext4    errors=remount-ro,noatime,nodiratime            0 1" >> ${OTHER_DISK_P2}/etc/fstab
   echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID}	/media/boot	vfat	defaults,rw,owner,flush,umask=000	0 0" >> ${OTHER_DISK_P2}/etc/fstab
   echo "tmpfs		/tmp	tmpfs	nodev,nosuid,mode=1777			0 0" >> ${OTHER_DISK_P2}/etc/fstab
 
@@ -416,6 +470,12 @@ recover_other_disk() {
     sleep 5
   done
 
+  # unmount other disk's data partition
+  while [ $(mount | grep "${OTHER_DISK_P3}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P3}
+    sleep 5
+  done
+
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_done" || true
   fi
@@ -437,6 +497,7 @@ sync_disks() {
 
   echo "mounting ${OTHER_DISK_DEVICE_TYPE} data partition..."
   mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
+  mount ${OTHER_DISK_DEVICE}p3 ${OTHER_DISK_P3}/
 
   sleep 1
 
@@ -469,6 +530,11 @@ sync_disks() {
   set +e
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
+    sleep 5
+  done
+
+  while [ $(mount | grep "${OTHER_DISK_P3}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P3}
     sleep 5
   done
 }
@@ -512,6 +578,7 @@ declare -r INIT_FINISHED_FILE_WAGGLE="/home/waggle/init_finished"
 
 declare -r OTHER_DISK_P1=/media/otherp1
 declare -r OTHER_DISK_P2=/media/otherp2
+declare -r OTHER_DISK_P3=/media/otherp3
 
 if [ ${DEBUG} -eq 1 ] ; then
   curl --retry 10 "${DEBUG_HOST}/failovertest?status=starting" || true
