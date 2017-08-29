@@ -310,7 +310,7 @@ recover_other_disk() {
   #wipe first 500MB (do not wipe eMMC on XU4)
   echo "wiping the first 500MB of the ${OTHER_DISK_DEVICE_TYPE} card..."
   if [ "${ODROID_MODEL}x" == "Cx" ] || [ "${OTHER_DISK_DEVICE_TYPE}x" == "SDx" ] ; then
-    dd if=/dev/zero of=${OTHER_DISK_DEVICE} bs=1M count=500
+    dd if=/dev/zero of=${OTHER_DISK_DEVICE} bs=100M count=5
     sync
     sleep 2
   fi
@@ -368,40 +368,37 @@ recover_other_disk() {
   fi
   touch ${OTHER_DISK_P2}/recovered.txt
   
-  if [[ ! -L ./var && -d ./var ]]; then
-    rsync --archive --verbose --one-file-system ./var ${OTHER_DISK_P3} --exclude=lost+found --exclude='var/cache/apt/*' --exclude='var/log/journal/*' --include='var/log/journal' --exclude='var/log/rabbitmq/*' --include='var/log/rabbitmq' --exclude='var/log/*'
-    exitcode=$?
-    if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
-      # exit code 1 means: Some files differ
-      exit $exitcode
-    fi
+  rsync -L --archive --verbose --one-file-system ./var ${OTHER_DISK_P3} --exclude=lost+found --exclude='var/cache/apt/*' --exclude='var/log/journal/*' --include='var/log/journal' --exclude='var/log/rabbitmq/*' --include='var/log/rabbitmq' --exclude='var/log/*'
+  exitcode=$?
+  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+    # exit code 1 means: Some files differ
+    exit $exitcode
   fi
-  
-  if [[ ! -L ./home && -d ./home ]]; then
-    rsync --archive --verbose --one-file-system ./home ${OTHER_DISK_P3} --exclude=lost+found
-    exitcode=$?
-    if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
-      # exit code 1 means: Some files differ
-      exit $exitcode
-    fi
-  fi
-  if [[ ! -L ./srv && -d ./srv ]]; then
-    rsync --archive --verbose --one-file-system ./srv ${OTHER_DISK_P3} --exclude=lost+found
-    exitcode=$?
-    if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
-      # exit code 1 means: Some files differ
-      exit $exitcode
-    fi
+ 
+  rsync --archive --verbose --one-file-system ./home ${OTHER_DISK_P3} --exclude=lost+found
+  exitcode=$?
+  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+    # exit code 1 means: Some files differ
+    exit $exitcode
   fi
 
-  cd ${OTHER_DISK_P2}
+  rsync --archive --verbose --one-file-system ./srv ${OTHER_DISK_P3} --exclude=lost+found
+  exitcode=$?
+  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+    # exit code 1 means: Some files differ
+    exit $exitcode
+  fi
+
+  cd ${OTHER_DISK_P2} 
+  
   mkdir -p wagglerw
   rm -rf home
   rm -rf var 
   rm -rf srv
-  ln -sf /wagglerw/home home
-  ln -sf /wagglerw/var var
-  ln -sf /wagglerw/srv srv
+  ln -s /wagglerw/home home
+  ln -s /wagglerw/var var
+  ln -s /wagglerw/srv srv
+
   cd /
   touch ${OTHER_DISK_P3}/recovered.txt
   #
@@ -428,7 +425,7 @@ recover_other_disk() {
 
   # write /etc/fstab
   echo "updating ${OTHER_DISK_DEVICE_TYPE} card's /etc/fstab with the new partition UUIDs..."
-  echo "UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}  /       ext4    errors=remount-ro,noatime,nodiratime            0 1" > ${OTHER_DISK_P2}/etc/fstab
+  echo "UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}  /       ext4    rw,nosuid,nodev,nofail,noatime,nodiratime            0 1" > ${OTHER_DISK_P2}/etc/fstab
   echo "UUID=${OTHER_DISK_DEVICE_RW_UUID}      /wagglerw       ext4    errors=remount-ro,noatime,nodiratime            0 1" >> ${OTHER_DISK_P2}/etc/fstab
   echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID}	/media/boot	vfat	defaults,rw,owner,flush,umask=000	0 0" >> ${OTHER_DISK_P2}/etc/fstab
   echo "tmpfs		/tmp	tmpfs	nodev,nosuid,mode=1777			0 0" >> ${OTHER_DISK_P2}/etc/fstab
