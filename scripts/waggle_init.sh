@@ -375,14 +375,14 @@ recover_other_disk() {
     exit $exitcode
   fi
  
-  rsync --archive --verbose --one-file-system ./home ${OTHER_DISK_P3} --exclude=lost+found
+  rsync -L --archive --verbose --one-file-system ./home ${OTHER_DISK_P3} --exclude=lost+found
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
     exit $exitcode
   fi
 
-  rsync --archive --verbose --one-file-system ./srv ${OTHER_DISK_P3} --exclude=lost+found
+  rsync -L --archive --verbose --one-file-system ./srv ${OTHER_DISK_P3} --exclude=lost+found
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
