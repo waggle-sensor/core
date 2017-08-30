@@ -58,6 +58,10 @@ echo "done"
 # may want to move into a different script?
 cp ${current_dir}/scripts/rabbitmqadmin /usr/bin
 
+# Copy waggle-fs-lock and unlock scripts
+cp ${current_dir}/scripts/waggle-fs-lock /usr/bin
+cp ${current_dir}/scripts/waggle-fs-unlock /usr/bin
+
 # install the particular version of pywaggle that we tested against
 pywaggle_tag="v0.20.1"
 pip install git+https://github.com/waggle-sensor/pywaggle@${pywaggle_tag}

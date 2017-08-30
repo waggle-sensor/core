@@ -1,0 +1,25 @@
+#!/bin/bash
+
+mount -o remount rw /
+if [ $? -ne 0 ] ; then
+  echo "Mounting / as rw failed"
+  exit 1
+fi
+
+content=`cat /etc/fstab | grep ' \/ ' | sed 's/rw,/ro,/'`
+#uuid=$(blkid -o export /dev/mmcblk0p2 | grep "^UUID" |  cut -f2 -d '=')
+sed -i '/ \/ /d' /etc/fstab
+sed -i "1i ${content}" /etc/fstab
+
+if [ $(cat /etc/fstab | grep ' \/ ' | grep 'ro,' | wc -l) -eq 0 ] ; then
+  echo "waggle-fs-lock failed"
+  exit 1
+fi
+
+mount -o remount ro /
+if [ $? -ne 0 ] ; then
+  echo "Mounting / as ro failed"
+  exit 1
+fi
+
+echo "waggle-fs-lock is done"
