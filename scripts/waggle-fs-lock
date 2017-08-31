@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mount -o remount rw /
+mount -o remount,rw /
 if [ $? -ne 0 ] ; then
   echo "Mounting / as rw failed"
   exit 1
@@ -16,7 +16,7 @@ if [ $(cat /etc/fstab | grep ' \/ ' | grep 'ro,' | wc -l) -eq 0 ] ; then
   exit 1
 fi
 
-mount -o remount ro /
+mount -o remount,ro /
 if [ $? -ne 0 ] ; then
   echo "Mounting / as ro failed"
   exit 1

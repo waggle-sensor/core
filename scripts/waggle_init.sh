@@ -439,8 +439,8 @@ recover_other_disk() {
   ln -s /wagglerw/srv srv
   ln -s /wagglerw/root root
 
-  ln -s /wagglerw/etc/waggle etc/waggle
-  ln -s /wagglerw/etc/rabbitmq etc/rabbitmq
+  ln -s /wagglerw/waggle etc/waggle
+  ln -s /wagglerw/rabbitmq etc/rabbitmq
 
   cd /
   touch ${OTHER_DISK_P3}/recovered.txt
@@ -678,7 +678,7 @@ fi
 
 # recover the other boot disk if necessary
 if [[ ${FORCE_RECOVERY} -eq 1 || ${RECOVERY_NEEDED} -eq 1 ]] ; then
-  src='x'
+  src=""
   # if '--source' option presented, get boot/data files from the source
   # Assumed that the source is path of an image file
   if [ "${SOURCE}x" != "x" ] ; then
@@ -689,7 +689,7 @@ if [[ ${FORCE_RECOVERY} -eq 1 || ${RECOVERY_NEEDED} -eq 1 ]] ; then
   fi
   # unmount everything all mountpoints we depend on
   prepare_mountpoints
-  recover_other_disk src
+  recover_other_disk ${src}
 
   if [ "${SOURCE}x" != "x" ] ; then
     echo "Unmounting the image ${SOURCE}..."
