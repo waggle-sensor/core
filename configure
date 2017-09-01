@@ -28,7 +28,7 @@ if [ ! -e ${current_dir}/scripts/heartbeat.sh ] ; then
   exit 1
 fi
 
-touch ${current_dir}/alive
+touch /tmp/alive
 
 set -x
 mkdir -p /var/log/waggle/
