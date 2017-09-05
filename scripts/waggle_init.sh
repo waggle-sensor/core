@@ -685,7 +685,7 @@ if [[ ${FORCE_RECOVERY} -eq 1 || ${RECOVERY_NEEDED} -eq 1 ]] ; then
     echo "Mounting the image ${SOURCE}..."
     losetup /dev/loop0 ${SOURCE}
     partprobe /dev/loop0
-    src = /dev/loop0
+    src=/dev/loop0
   fi
   # unmount everything all mountpoints we depend on
   prepare_mountpoints
