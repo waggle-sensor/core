@@ -501,7 +501,7 @@ recover_other_disk() {
   done
 
   # unmount source data partition, if presented
-  if [ ! "${src}x" == "x" ] ; then
+  if [ "${src}x" != "x" ] ; then
     while [ $(mount | grep "/media/data" | wc -l) -ne 0 ] ; do
       umount /media/data
       sleep 5
