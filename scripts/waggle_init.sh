@@ -113,8 +113,12 @@ setup_system() {
     if [ ${DEBUG} -eq 1 ] ; then
       curl --retry 10 "${DEBUG_HOST}/failovertest?MAC_ADDRESS=${MAC_ADDRESS}" || true
     fi
-
   fi
+
+  #
+  # check rsa host keys
+  #
+  [ ! -f /etc/ssh/ssh_host_rsa_key ] && dpkg-reconfigure openssh-server
 
   #
   # create Node ID
