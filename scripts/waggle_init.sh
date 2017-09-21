@@ -376,7 +376,7 @@ recover_other_disk() {
     mount ${src}p2 /media/data
     cd /media/data
   fi
-  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='dev/*' --exclude='proc/*' --exclude='sys/*' --exclude='tmp/*' --exclude='run/*' --exclude='mnt/*' --exclude='media/*' --exclude=lost+found --exclude='var/*' --exclude='srv/*' --exclude='home/*' --exclude='root/*' --exclude='aafirstboot' --exclude='.first_boot' --exclude='usr/lib/waggle/core/scripts/aafirstboot'
+  rsync --archive --verbose --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='./dev/*' --exclude='./proc/*' --exclude='./sys/*' --exclude='./tmp/*' --exclude='./run/*' --exclude='./mnt/*' --exclude='./media/*' --exclude=lost+found --exclude='./var/*' --exclude='./srv/*' --exclude='./home/*' --exclude='./root/*' --exclude='aafirstboot' --exclude='.first_boot' --exclude='usr/lib/waggle/core/scripts/aafirstboot'
   
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
@@ -385,7 +385,7 @@ recover_other_disk() {
   fi
   touch ${OTHER_DISK_P2}/recovered.txt
   
-  rsync -L --archive --verbose --one-file-system ./var ${OTHER_DISK_P3} --exclude=lost+found --exclude='var/cache/apt/*' --exclude='var/log/journal/*' --include='var/log/journal' --exclude='var/log/rabbitmq/*' --include='var/log/rabbitmq' --exclude='var/log/*'
+  rsync -L --archive --verbose --one-file-system ./var ${OTHER_DISK_P3} --exclude=lost+found --exclude='./var/cache/apt/*' --exclude='./var/log/journal/*' --include='./var/log/journal' --exclude='./var/log/rabbitmq/*' --include='./var/log/rabbitmq' --exclude='./var/log/*'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
@@ -406,7 +406,7 @@ recover_other_disk() {
     exit $exitcode
   fi
   
-  rsync -L --archive --verbose --one-file-system ./root ${OTHER_DISK_P3} --exclude=lost+found --exclude='root/do_recovery'
+  rsync -L --archive --verbose --one-file-system ./root ${OTHER_DISK_P3} --exclude=lost+found --exclude='./root/do_recovery'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
