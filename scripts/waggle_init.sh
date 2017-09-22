@@ -446,13 +446,13 @@ recover_other_disk() {
   ln -s /wagglerw/waggle etc/waggle
   ln -s /wagglerw/rabbitmq etc/rabbitmq
 
-  cd /
-  touch ${OTHER_DISK_P3}/recovered.txt
-  
   cd ${OTHER_DISK_P3}
   
   mkdir var/log/rabbitmq
   mkdir var/log/journal
+  
+  cd /
+  touch ${OTHER_DISK_P3}/recovered.txt
   
   #
   # indicate recovery process completed
