@@ -451,6 +451,8 @@ recover_other_disk() {
   mkdir var/log/rabbitmq
   mkdir var/log/journal
   
+  chown rabbitmq:rabbitmq var/log/rabbitmq/
+  
   cd /
   touch ${OTHER_DISK_P3}/recovered.txt
   
