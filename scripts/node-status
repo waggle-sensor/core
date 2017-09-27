@@ -1,59 +1,93 @@
 #!/bin/bash
 
-mkdir -p /etc/waggle/config
-cd /etc/waggle/config
+node_config_dir=/etc/waggle
+mkdir -p ${node_config_dir}
 
 device=$(cat /proc/cpuinfo | grep Hardware | cut -d ":" -f 2)
 
+echo -ne "0 % done\r"
 ########################
 #         IDs          #
 ########################
-cp /etc/machine-id ID_machine
+cp /etc/machine-id ${node_config_dir}/ID_machine
 
 if [ ${device} = "ODROIDC" ] ; then
   id_nc=$(/usr/lib/waggle/core/scripts/detect_mac_address.sh | grep MAC_STRING | cut -d '=' -f 2)
-  echo ${id_nc} > ID_NC
+  echo ${id_nc} > ${node_config_dir}/ID_NC
 
   id_ep=$(/usr/lib/waggle/nodecontroller/scripts/eplogin -x /usr/lib/waggle/core/scripts/detect_mac_address.sh | grep MAC_STRING | cut -d '=' -f 2)
-  echo ${id_ep} > ID_EP
+  echo ${id_ep} > ${node_config_dir}/ID_EP
 else
   id_ep=$(/usr/lib/waggle/core/scripts/detect_mac_address.sh | grep MAC_STRING | cut -d '=' -f 2)
-  echo ${id_ep} > ID_EP
+  echo ${id_ep} > ${node_config_dir}/ID_EP
 fi
 
 if [ ${device} = "ODROIDC" ] ; then
-  modem=$(/usr/lib/waggle/nodecontroller/scripts/modem-info)
-  imei=$(echo modem | grep IMEI | cut -d '=' -f 2)
-  ccid=$(echo modem | grep CCID | cut -d '=' -f 2)
-  echo ${imei} > ID_Modem
-  echo ${ccid} > ID_SIM
+  if [ -L /dev/attwwan ] ; then
+    modem=$(/usr/lib/waggle/nodecontroller/scripts/modem-info)
+    imei=$(echo "$modem" | grep IMEI | cut -d '=' -f 2)
+    ccid=$(echo "$modem" | grep CCID | cut -d '=' -f 2)
+    echo ${imei} > ${node_config_dir}/ID_Modem
+    echo ${ccid} > ${node_config_dir}/ID_SIM
+  fi
 fi
 
 if [ ${device} = "ODROIDC" ] ; then
   id_wagman=$(wagman-client id)
-  echo ${id_wagman} > ID_Wagman
+  echo ${id_wagman} > ${node_config_dir}/ID_Wagman
 fi
 
+echo -ne "50 % done\r"
 ########################
 #      Versions        #
 ########################
 ver_core=$(cd /usr/lib/waggle/core; git describe | cut -d '-' -f 1)
-cd /etc/waggle/config
-echo ${ver_core} > VER_Core
+echo ${ver_core} > ${node_config_dir}/VER_Core
 
 if [ ${device} = "ODROIDC" ] ; then
   ver_nodecontroller=$(cd /usr/lib/waggle/nodecontroller; git describe | cut -d '-' -f 1)
-  cd /etc/waggle/config
-  echo ${ver_nodecontroller} > VER_Nodecontroller
-  ver_edgeprocessor=$(/usr/lib/waggle/nodecontroller/scripts/eplogin -x cd /usr/lib/waggle/edgeprocessor; git describe | cut -d '-' -f 1)
-  cd /etc/waggle/config
-  echo ${ver_edgeprocessor} > VER_Edgeprocessor
+  echo ${ver_nodecontroller} > ${node_config_dir}/VER_Nodecontroller
+  ver_edgeprocessor=$(/usr/lib/waggle/nodecontroller/scripts/eplogin -x "cd /usr/lib/waggle/edge_processor; git describe | cut -d '-' -f 1")
+  echo ${ver_edgeprocessor} > ${node_config_dir}/VER_Edgeprocessor
   ver_pluginmanager=$(cd /usr/lib/waggle/plugin_manager; git describe | cut -d '-' -f 1)
-  cd /etc/waggle/config
-  echo ${ver_pluginmanager} > VER_Pluginmanager
+  echo ${ver_pluginmanager} > ${node_config_dir}/VER_Pluginmanager
 else
-  ver_edgeprocessor=$(cd /usr/lib/waggle/edgeprocessor; git describe | cut -d '-' -f 1)
-  cd /etc/waggle/config
-  echo ${ver_edgeprocessor} > VER_Edgeprocessor
+  ver_edgeprocessor=$(cd /usr/lib/waggle/edge_processor; git describe | cut -d '-' -f 1)
+  echo ${ver_edgeprocessor} > ${node_config_dir}/VER_Edgeprocessor
 fi
 
+if [ ${device} = "ODROIDC" ] ; then
+  id_wagman=$(wagman-client ver)
+  echo "${id_wagman}" > ${node_config_dir}/VER_Wagman
+fi
+
+echo -ne "60 % done\r"
+########################
+#       Configs        #
+########################
+
+if [ -w / ] ; then
+  echo "Locked" > ${node_config_dir}/fs-lock
+else
+  echo "Unlocked" > ${node_config_dir}/fs-lock
+fi
+
+if [ ${device} = "ODROIDC" ] ; then
+  if [ "$hash" == "725f8d5ed683bef53bd9b1826ecfff44391d86dd" ]; then 
+    echo "Locked" > ${node_config_dir}/pw-lock
+  elif [ "$hash" ==  "f76f01a49c45f26e32924246217b8eb6df0741fe" ]; then 
+    echo "Unlocked" > ${node_config_dir}/pw-lock
+  else
+    echo "File altered" > ${node_config_dir}/pw-lock
+  fi
+else
+  if [ "$hash" == "b0ac532c008523233768c56e5e247210f2495e47" ]; then 
+    echo "Locked" > ${node_config_dir}/pw-lock
+  elif [ "$hash" ==  "8034856ebee2e336f1ddddc39618e9d59634421e" ]; then 
+    echo "Unlocked" > ${node_config_dir}/pw-lock
+  else
+    echo "File altered" > ${node_config_dir}/pw-lock
+  fi
+fi
+
+echo -ne "100 % done\r"
