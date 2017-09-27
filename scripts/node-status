@@ -18,10 +18,10 @@ if [ "${device}" == "ODROIDC" ]; then
   echo ${id_ep} > ID_EP
 else
   id_ep=$(/usr/lib/waggle/core/scripts/detect_mac_address.sh | grep MAC_STRING | cut -d '=' -f 2)
-  echo ${id_ep} ID_EP
+  echo ${id_ep} > ID_EP
 fi
 
-if [ "${device}" == "ODROIDC" ]; then
+if [ "${device}" == "ODROIDC" ] ; then
   modem=$(/usr/lib/waggle/nodecontroller/scripts/modem-info)
   imei=$(echo modem | grep IMEI | cut -d '=' -f 2)
   ccid=$(echo modem | grep CCID | cut -d '=' -f 2)
@@ -41,10 +41,13 @@ ver_core=$(cd /usr/lib/waggle/core; git describe | cut -d '-' -f 1)
 cd /etc/waggle/config
 echo ${ver_core} > VER_Core
 
-if [ "${device}" == "ODROIDC" ]; then
+if [ "${device}" == "ODROIDC" ] ; then
   ver_nodecontroller=$(cd /usr/lib/waggle/nodecontroller; git describe | cut -d '-' -f 1)
   cd /etc/waggle/config
   echo ${ver_nodecontroller} > VER_Nodecontroller
+  ver_edgeprocessor=$(/usr/lib/waggle/nodecontroller/scripts/eplogin -x cd /usr/lib/waggle/edgeprocessor; git describe | cut -d '-' -f 1)
+  cd /etc/waggle/config
+  echo ${ver_edgeprocessor} > VER_Edgeprocessor
   ver_pluginmanager=$(cd /usr/lib/waggle/plugin_manager; git describe | cut -d '-' -f 1)
   cd /etc/waggle/config
   echo ${ver_pluginmanager} > VER_Pluginmanager
