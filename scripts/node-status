@@ -5,7 +5,6 @@ mkdir -p ${node_config_dir}
 
 device=$(cat /proc/cpuinfo | grep Hardware | cut -d ":" -f 2)
 
-echo -ne "0 % done\r"
 ########################
 #         IDs          #
 ########################
@@ -37,7 +36,6 @@ if [ ${device} = "ODROIDC" ] ; then
   echo ${id_wagman} > ${node_config_dir}/ID_Wagman
 fi
 
-echo -ne "50 % done\r"
 ########################
 #      Versions        #
 ########################
@@ -61,21 +59,21 @@ if [ ${device} = "ODROIDC" ] ; then
   echo "${id_wagman}" > ${node_config_dir}/VER_Wagman
 fi
 
-echo -ne "60 % done\r"
 ########################
-#       Configs        #
+#       Status         #
 ########################
 
 if [ -w / ] ; then
-  echo "Locked" > ${node_config_dir}/fs-lock
+  echo "UnLocked" > ${node_config_dir}/fs-lock
 else
-  echo "Unlocked" > ${node_config_dir}/fs-lock
+  echo "Locked" > ${node_config_dir}/fs-lock
 fi
 
+hash=$(shasum /etc/shadow | cut -d " " -f 1)
 if [ ${device} = "ODROIDC" ] ; then
   if [ "$hash" == "725f8d5ed683bef53bd9b1826ecfff44391d86dd" ]; then 
     echo "Locked" > ${node_config_dir}/pw-lock
-  elif [ "$hash" ==  "f76f01a49c45f26e32924246217b8eb6df0741fe" ]; then 
+  elif [ "$hash" ==  "f76f01a49c45f26e32924246217b8eb6df0741fe" ]; then
     echo "Unlocked" > ${node_config_dir}/pw-lock
   else
     echo "File altered" > ${node_config_dir}/pw-lock
@@ -89,5 +87,3 @@ else
     echo "File altered" > ${node_config_dir}/pw-lock
   fi
 fi
-
-echo -ne "100 % done\r"
