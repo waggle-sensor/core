@@ -420,13 +420,6 @@ recover_other_disk() {
     exit $exitcode
   fi
 
-  rsync -L --archive --verbose --one-file-system ./etc/rabbitmq ${OTHER_DISK_P3} --exclude=lost+found
-  exitcode=$?
-  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
-    # exit code 1 means: Some files differ
-    exit $exitcode
-  fi
-
   cd ${OTHER_DISK_P2} 
   
   mkdir -p wagglerw
@@ -436,7 +429,6 @@ recover_other_disk() {
   rm -rf root
 
   rm -rf etc/waggle
-  rm -rf etc/rabbitmq
   
   ln -s /wagglerw/home home
   ln -s /wagglerw/var var
@@ -444,7 +436,6 @@ recover_other_disk() {
   ln -s /wagglerw/root root
 
   ln -s /wagglerw/waggle etc/waggle
-  ln -s /wagglerw/rabbitmq etc/rabbitmq
 
   cd ${OTHER_DISK_P3}
   
@@ -714,6 +705,17 @@ else
   # make sure both boot media have the same /etc/waggle contents and node credentials
   # sync_disks
 fi
+
+# systemd-random-seed.service is failed because when the file system if readonly
+# SO, restart the service
+echo "* restart systemd-random-seed.service"
+systemctl restart systemd-random-seed.service
+
+# networking.service is failed because of the reason we don't know
+# BUT NOT RELATED WITH READONLY FILE SYSTEM
+# But restart the service
+echo "* restart networking.service"
+systemctl restart networking.service
 
 touch ${INIT_FINISHED_FILE}
 touch ${INIT_FINISHED_FILE_WAGGLE}
