@@ -7,6 +7,4 @@ The heartbeat service continuously turns on and off a General Purpose IO (GPIO) 
 Turning the GPIO pin on is dependent on the modification time of the file
 /usr/lib/waggle/core/alive being within 60 seconds of the current system
 time. The modification time of the alive file is periodically updated by the
-wellness service. See the documentation on the wellness service
-(https://github.com/waggle-sensor/nodecontroller/tree/NC_wellness/scripts/wellness-service.md)
-for details on what conditions cause the alive file modification time to not be updated.
+connectivity monitor service (https://github.com/waggle-sensor/nodecontroller/scripts/monitor-connectivity-service).
