@@ -57,16 +57,12 @@ systemctl disable systemd-timesyncd
 # Restrict SSH connections to local port bindings
 sed -i 's/^#ListenAddress ::$/ListenAddress 127.0.0.1/' /etc/ssh/sshd_config
 
-
-### kill X processses
-set +e
-killall -u lightdm -9
-
 ### username
 export odroid_exists=$(id -u odroid > /dev/null 2>&1; echo $?)
 export waggle_exists=$(id -u waggle > /dev/null 2>&1; echo $?)
 
 # rename existing user odroid to waggle
+set +e
 if [ ${odroid_exists} == 0 ] && [ ${waggle_exists} != 0 ] ; then
   echo "I will kill all processes of the user \"odroid\" now."
   sleep 1
