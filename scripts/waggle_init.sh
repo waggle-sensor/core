@@ -113,8 +113,12 @@ setup_system() {
     if [ ${DEBUG} -eq 1 ] ; then
       curl --retry 10 "${DEBUG_HOST}/failovertest?MAC_ADDRESS=${MAC_ADDRESS}" || true
     fi
-
   fi
+
+  #
+  # check rsa host keys
+  #
+  [ ! -f /etc/ssh/ssh_host_rsa_key ] && dpkg-reconfigure openssh-server
 
   #
   # create Node ID
@@ -169,6 +173,12 @@ prepare_mountpoints() {
   mkdir -p ${OTHER_DISK_P2}
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
+    sleep 5
+  done
+
+  mkdir -p ${OTHER_DISK_P3}
+  while [ $(mount | grep "${OTHER_DISK_P3}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P3}
     sleep 5
   done
 
@@ -266,9 +276,16 @@ check_other_partitions() {
     fi
   fi
 
+  mount ${OTHER_DISK_DEVICE}p3 ${OTHER_DISK_P3}
+
   echo "unmounting data partition..."
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
+    sleep 5
+  done
+
+  while [ $(mount | grep "${OTHER_DISK_P3}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P3}
     sleep 5
   done
 }
@@ -286,7 +303,7 @@ detect_recovery() {
 
 recover_other_disk() {
   echo "recovering the ${OTHER_DISK_DEVICE_TYPE} card..."
-
+  src=$1
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_init" || true
   fi
@@ -297,7 +314,7 @@ recover_other_disk() {
   #wipe first 500MB (do not wipe eMMC on XU4)
   echo "wiping the first 500MB of the ${OTHER_DISK_DEVICE_TYPE} card..."
   if [ "${ODROID_MODEL}x" == "Cx" ] || [ "${OTHER_DISK_DEVICE_TYPE}x" == "SDx" ] ; then
-    dd if=/dev/zero of=${OTHER_DISK_DEVICE} bs=1M count=500
+    dd if=/dev/zero of=${OTHER_DISK_DEVICE} bs=100M count=5
     sync
     sleep 2
   fi
@@ -320,9 +337,14 @@ recover_other_disk() {
       ./sd_fusing.sh ${OTHER_DISK_DEVICE}
   fi
 
-  mount ${CURRENT_DISK_DEVICE}p1 /media/boot
+  if [ "${src}x" == "x" ] ; then
+    mount ${CURRENT_DISK_DEVICE}p1 /media/boot
+  else
+    mount ${src}p1 /media/boot
+  fi
   mount ${OTHER_DISK_DEVICE}p1 ${OTHER_DISK_P1}/
   mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
+  mount ${OTHER_DISK_DEVICE}p3 ${OTHER_DISK_P3}/
 
   #
   # create recovery files for partitions
@@ -345,14 +367,84 @@ recover_other_disk() {
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=create_recovery_p2" || true
   fi
-  cd /
-  rsync --archive --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude=lost+found --exclude='/var/cache/apt/*' --exclude='/var/lib/rabbitmq/*' --exclude='/var/log/*'
+
+  if [ "${src}x" == "x" ] ; then
+    cd /
+  else
+    mkdir -p /media/data
+    mount ${src}p2 /media/data
+    cd /media/data
+  fi
+
+  rsync --archive --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude=lost+found --exclude='/var/*' --exclude='/srv/*' --exclude='/home/*' --exclude='/root/*' --exclude='aafirstboot' --exclude='.first_boot' --exclude='/usr/lib/waggle/core/scripts/aafirstboot'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
     exit $exitcode
   fi
   touch ${OTHER_DISK_P2}/recovered.txt
+  
+  rsync -L --archive --one-file-system ./var ${OTHER_DISK_P3} --exclude=lost+found --exclude='/var/cache/apt/*' --exclude='/var/log/*' --exclude='/var/lib/rabbitmq/*'
+  exitcode=$?
+  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+    # exit code 1 means: Some files differ
+    exit $exitcode
+  fi
+ 
+  rsync -L --archive --one-file-system ./home ${OTHER_DISK_P3} --exclude=lost+found 
+  exitcode=$?
+  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+    # exit code 1 means: Some files differ
+    exit $exitcode
+  fi
+
+  rsync -L --archive --one-file-system ./srv ${OTHER_DISK_P3} --exclude=lost+found
+  exitcode=$?
+  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+    # exit code 1 means: Some files differ
+    exit $exitcode
+  fi
+  
+  rsync -L --archive --one-file-system ./root ${OTHER_DISK_P3} --exclude=lost+found --exclude='/root/do_recovery'
+  exitcode=$?
+  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+    # exit code 1 means: Some files differ
+    exit $exitcode
+  fi
+
+  rsync -L --archive --one-file-system ./etc/waggle ${OTHER_DISK_P3} --exclude=lost+found
+  exitcode=$?
+  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
+    # exit code 1 means: Some files differ
+    exit $exitcode
+  fi
+
+  cd ${OTHER_DISK_P2} 
+  
+  mkdir -p wagglerw
+  rm -rf home
+  rm -rf var 
+  rm -rf srv
+  rm -rf root
+
+  rm -rf etc/waggle
+  
+  ln -s /wagglerw/home home
+  ln -s /wagglerw/var var
+  ln -s /wagglerw/srv srv
+  ln -s /wagglerw/root root
+
+  ln -s /wagglerw/waggle etc/waggle
+
+  cd ${OTHER_DISK_P3}
+  
+  mkdir -p var/log/rabbitmq
+  mkdir -p var/log/journal
+  
+  chown rabbitmq:rabbitmq var/log/rabbitmq/
+  
+  cd /
+  touch ${OTHER_DISK_P3}/recovered.txt
 
   #
   # indicate recovery process completed
@@ -360,14 +452,17 @@ recover_other_disk() {
   OTHER_DISK_DEVICE_BOOT_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p1 | grep "^UUID" |  cut -f2 -d '=')
   echo "OTHER_DISK_DEVICE_BOOT_UUID: ${OTHER_DISK_DEVICE_BOOT_UUID}"
 
-  OTHER_DISK_DEVICE_DATA_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p2 | grep "^UUID" |  cut -f2 -d '=')
-  echo "OTHER_DISK_DEVICE_DATA_UUID: ${OTHER_DISK_DEVICE_DATA_UUID}"
+  OTHER_DISK_DEVICE_ROOTFS_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p2 | grep "^UUID" |  cut -f2 -d '=')
+  echo "OTHER_DISK_DEVICE_ROOTFS_UUID: ${OTHER_DISK_DEVICE_ROOTFS_UUID}"
 
+  OTHER_DISK_DEVICE_RW_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p3 | grep "^UUID" |  cut -f2 -d '=')
+  echo "OTHER_DISK_DEVICE_RW_UUID: ${OTHER_DISK_DEVICE_RW_UUID}"
+  
   # modify boot.ini
   echo "updating ${OTHER_DISK_DEVICE_TYPE} card's boot.ini with the new data partition UUID..."
-  sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DISK_DEVICE_DATA_UUID}'/' ${OTHER_DISK_P1}/boot.ini
+  sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DISK_DEVICE_ROOTFS_UUID}'/' ${OTHER_DISK_P1}/boot.ini
 
-  if [ $(grep -v "^#" ${OTHER_DISK_P1}/boot.ini | grep "root=UUID=${OTHER_DISK_DEVICE_DATA_UUID}" | wc -l) -eq 0 ] ; then
+  if [ $(grep -v "^#" ${OTHER_DISK_P1}/boot.ini | grep "root=UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}" | wc -l) -eq 0 ] ; then
       echo "Error: boot.ini does not have new UUID in bootargs or bootrootfs"
       rm -f ${pidfile}
       exit 1
@@ -375,9 +470,10 @@ recover_other_disk() {
 
   # write /etc/fstab
   echo "updating ${OTHER_DISK_DEVICE_TYPE} card's /etc/fstab with the new partition UUIDs..."
-  echo "UUID=${OTHER_DISK_DEVICE_DATA_UUID}	/	ext4	errors=remount-ro,noatime,nodiratime		0 1" > ${OTHER_DISK_P2}/etc/fstab
-  echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID}	/media/boot	vfat	defaults,rw,owner,flush,umask=000	0 0" >> ${OTHER_DISK_P2}/etc/fstab
-  echo "tmpfs		/tmp	tmpfs	nodev,nosuid,mode=1777			0 0" >> ${OTHER_DISK_P2}/etc/fstab
+  echo "UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}  /       ext4    rw,nosuid,nodev,nofail,noatime,nodiratime            0 1" > ${OTHER_DISK_P2}/etc/fstab
+  echo "UUID=${OTHER_DISK_DEVICE_RW_UUID}      /wagglerw       ext4    errors=remount-ro,noatime,nodiratime            0 1" >> ${OTHER_DISK_P2}/etc/fstab
+  echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID} /media/boot vfat  defaults,rw,owner,flush,umask=000 0 0" >> ${OTHER_DISK_P2}/etc/fstab
+  echo "tmpfs   /tmp  tmpfs nodev,nosuid,mode=1777      0 0" >> ${OTHER_DISK_P2}/etc/fstab
 
   # restart waggle-platform target
   local restart_waggle_platform=0
@@ -390,7 +486,7 @@ recover_other_disk() {
   fi
 
   echo "removing do_recovery special files..."
-  rm -f /root/do_recovery ${OTHER_DISK_P2}/root/do_recovery
+  rm -f /root/do_recovery 
 
   echo "setting ${OTHER_DISK_DEVICE_TYPE} card's hostname..."
   echo "${MAC_STRING}_${OTHER_DISK_DEVICE_TYPE}" > ${OTHER_DISK_P2}/etc/hostname
@@ -404,6 +500,14 @@ recover_other_disk() {
     sleep 5
   done
 
+  # unmount source data partition, if presented
+  if [ "${src}x" != "x" ] ; then
+    while [ $(mount | grep "/media/data" | wc -l) -ne 0 ] ; do
+      umount /media/data
+      sleep 5
+    done
+  fi
+
   # unmount other disk's boot partition
   while [ $(mount | grep "${OTHER_DISK_P1}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P1}
@@ -413,6 +517,12 @@ recover_other_disk() {
   # unmount other disk's data partition
   while [ $(mount | grep "${OTHER_DISK_P2}" | wc -l) -ne 0 ] ; do
     umount ${OTHER_DISK_P2}
+    sleep 5
+  done
+
+  # unmount other disk's data partition
+  while [ $(mount | grep "${OTHER_DISK_P3}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P3}
     sleep 5
   done
 
@@ -437,6 +547,7 @@ sync_disks() {
 
   echo "mounting ${OTHER_DISK_DEVICE_TYPE} data partition..."
   mount ${OTHER_DISK_DEVICE}p2 ${OTHER_DISK_P2}/
+  mount ${OTHER_DISK_DEVICE}p3 ${OTHER_DISK_P3}/
 
   sleep 1
 
@@ -471,6 +582,11 @@ sync_disks() {
     umount ${OTHER_DISK_P2}
     sleep 5
   done
+
+  while [ $(mount | grep "${OTHER_DISK_P3}" | wc -l) -ne 0 ] ; do
+    umount ${OTHER_DISK_P3}
+    sleep 5
+  done
 }
 
 stop_singleton() {
@@ -484,6 +600,7 @@ stop_singleton() {
 
 FORCE_EXECUTION=0
 FORCE_RECOVERY=0
+SOURCE=""
 while [[ $# -gt 0 ]]; do
   key="$1"
   echo "Key: $key"
@@ -493,6 +610,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     --recover)
       FORCE_RECOVERY=1
+      ;;
+    --source)
+      SOURCE="$2"
       ;;
       *)
       ;;
@@ -512,6 +632,7 @@ declare -r INIT_FINISHED_FILE_WAGGLE="/home/waggle/init_finished"
 
 declare -r OTHER_DISK_P1=/media/otherp1
 declare -r OTHER_DISK_P2=/media/otherp2
+declare -r OTHER_DISK_P3=/media/otherp3
 
 if [ ${DEBUG} -eq 1 ] ; then
   curl --retry 10 "${DEBUG_HOST}/failovertest?status=starting" || true
@@ -532,14 +653,14 @@ set +e
 # keep track of the PID to prevent multiple executions of this script
 start_singleton $FORCE_EXECUTION
 
+
 # set the hostname and do some other things
-setup_system
+if [ -w / ] ; then setup_system ; fi
 
 # assert that all dependencies for recovery have been met
 assert_dependencies
 
-# unmount everything all mountpoints we depend on
-prepare_mountpoints
+
 
 # check various conditions to determine if recovery of the other boot disk is needed
 RECOVERY_NEEDED=0
@@ -557,7 +678,23 @@ fi
 
 # recover the other boot disk if necessary
 if [[ ${FORCE_RECOVERY} -eq 1 || ${RECOVERY_NEEDED} -eq 1 ]] ; then
-  recover_other_disk
+  src=""
+  # if '--source' option presented, get boot/data files from the source
+  # Assumed that the source is path of an image file
+  if [ "${SOURCE}x" != "x" ] ; then
+    echo "Mounting the image ${SOURCE}..."
+    losetup /dev/loop0 ${SOURCE}
+    partprobe /dev/loop0
+    src=/dev/loop0
+  fi
+  # unmount everything all mountpoints we depend on
+  prepare_mountpoints
+  recover_other_disk ${src}
+
+  if [ "${SOURCE}x" != "x" ] ; then
+    echo "Unmounting the image ${SOURCE}..."
+    losetup -d /dev/loop0
+  fi
 else
   if [ ${DEBUG} -eq 1 ] ; then
     curl --retry 10 "${DEBUG_HOST}/failovertest?status=recovery_not_needed" || true
@@ -565,8 +702,19 @@ else
   echo "all looks good"
 
   # make sure both boot media have the same /etc/waggle contents and node credentials
-  sync_disks
+  # sync_disks
 fi
+
+# systemd-random-seed.service is failed because when the file system if readonly
+# SO, restart the service
+echo "* restart systemd-random-seed.service"
+systemctl restart systemd-random-seed.service
+
+# networking.service is failed because of the reason we don't know
+# BUT NOT RELATED TO READONLY FILE SYSTEM
+# But restart the service
+echo "* restart networking.service"
+systemctl restart networking.service
 
 touch ${INIT_FINISHED_FILE}
 touch ${INIT_FINISHED_FILE_WAGGLE}

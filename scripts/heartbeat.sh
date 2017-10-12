@@ -62,7 +62,7 @@ echo ""
 echo "TIME_LOW  : ${TIME_LOW}"
 echo "TIME_HIGH : ${TIME_HIGH}"
 
-ALIVE_FILE=/usr/lib/waggle/core/alive
+ALIVE_FILE=/tmp/alive
 touch ${ALIVE_FILE}
 
 # Detect Odroid model

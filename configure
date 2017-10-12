@@ -28,7 +28,7 @@ if [ ! -e ${current_dir}/scripts/heartbeat.sh ] ; then
   exit 1
 fi
 
-touch ${current_dir}/alive
+touch /tmp/alive
 
 set -x
 mkdir -p /var/log/waggle/
@@ -57,6 +57,10 @@ echo "done"
 
 # may want to move into a different script?
 cp ${current_dir}/scripts/rabbitmqadmin /usr/bin
+
+# Copy waggle-fs-lock and unlock scripts
+cp ${current_dir}/scripts/waggle-fs-lock /usr/bin
+cp ${current_dir}/scripts/waggle-fs-unlock /usr/bin
 
 # install the particular version of pywaggle that we tested against
 pywaggle_tag="v0.21.4"

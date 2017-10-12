@@ -11,13 +11,17 @@ parted --script $1 mkpart primary fat16 3072s 266239s
 parted --script $1 set 1 lba off
 
 # Create root partition.
-parted --script $1 mkpart primary ext4 266240s 100%
+parted --script $1 mkpart primary ext4 266240s 15624191s 
+parted --script $1 mkpart primary ext4 15624192s 100%
 
 # Create boot filesystem.
 mkdosfs -F 16 "$1p1"
 
-# Create root filesystem.
+# Create rootfs filesystem.
 mkfs.ext4 "$1p2"
+
+# Create wagglerw filesystem.
+mkfs.ext4 "$1p3"
 
 # NOTE We should think carefully about the fragility of this. It's possible
 # that partition naming conventions may change unexpectedly.
