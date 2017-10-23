@@ -1,0 +1,624 @@
+#! /usr/bin/env python3
+
+import argparse
+import pika
+import time
+import sys
+import re
+import os
+import json
+import subprocess
+import calendar
+import ssl
+
+'''
+    Gathers information for system metrics
+    and sends them as a json dump to beehive metric
+    Can be modified when a new waggle protocol releases
+'''
+
+common = {
+    'node_id': None,
+    'boot_id': None,
+    'disks': {
+        'current_disk': {
+            'type': None,
+            'name': None,
+            'partitions': {
+                'p1_total': None,           # GB
+                'p1_used': None,            # %
+                'p2_total': None,           # GB
+                'p2_used': None,            # %
+                'p3_total': None,           # GB
+                'p3_used': None,            # %
+            },
+        },
+        'other_disk': {
+            'type': None,
+            'name': None,
+        },
+    },
+    'ram' : {
+        'total': None,                      # GB
+        'free': None,                       # GB
+    },
+    'cpu_temp': None,                        # C
+    'fs_lock': None,
+    'current_time': None,
+    'uptime': None,
+    'idletime': None,
+    'load_1': None,
+    'load_5': None,
+    'load_10': None,
+    'hbmode': None,
+    'ipaddress': None,
+    'rabbitmq': {
+        'queues': None,
+        'exchanges': None,
+        'connections': None,
+        'shovels': None,
+    },
+}
+
+nodecontroller = {
+    'pw_lock': None,
+    'repositories': {
+        'core': None,
+        'nodecontroller': None,
+        'plugin_manager': None,
+    },
+    'devices': {
+        'wagman': None,
+        'metsense': None,
+        'alphasense': None,
+        'modem': None,
+    },
+    'beehive': {
+        'ping': None,
+        'sshd': None,
+    },
+    'services': {
+        'waggle-init.service': None,
+        'waggle-epoch.service': None,
+        'waggle-heartbeat.service': None,
+        'waggle-reverse-tunnel.service': None,
+        'waggle-wagman-driver.service': None,
+        'waggle-wwan.service': None,
+        'rabbitmq-server.service': None,
+    },
+    'local_sshd': None,
+}
+
+edgeprocessor = {
+    'pw_lock': None,
+    'repositories': {
+        'core': None,
+        'edge_processor': None,
+    },
+    'devices': {
+        'camera_top': None,
+        'camera_bottom': None,
+        'microphone': None,
+    },
+    'services': {
+        'waggle-init.service': None,
+        'waggle-heartbeat.service': None,
+        'rabbitmq-server.service': None,
+    },
+}
+
+wagman = {
+    'ver': {
+        'hw': None,
+        'kernel': None,
+        'time': None,
+        'git': None,
+    },
+    'boot_flag': None,
+    'boot_count': None,
+    'bootloader_nc_flag': None,
+    'heartbeats': {
+        'nc': None,
+        'ep': None,
+        'cs': None,
+    },
+    'currents': {
+        'wagman': None,
+        'nc': None,
+        'ep': None,
+        'cs': None,
+        'port4': None,
+        'port5': None,
+    },
+    'temperatures': {
+        'heatsink_nc': None,
+        'heatsink_ep': None,
+        'battery': None,
+        'brainplate': None,
+        'powersupply': None,
+    },
+    'date': None,
+    'rtc': None,
+    'uptime': None,
+    'env': {
+        'temperature': None,
+        'humidity': None,
+    },
+    'fails': {
+        'nc': None,
+        'ep': None,
+        'cs': None,
+        'port4': None,
+        'port5': None,
+    },
+    'enabled': {
+        'nc': None,
+        'ep': None,
+        'cs': None,
+        'port4': None,
+        'port5': None,
+    },
+    'media': {
+        'nc': None,
+        'ep': None,
+    },
+}
+
+
+datetime_format = '%Y/%m/%d %H:%M:%S'
+def format_datetime(datetime):
+    return time.strftime(datetime_format, time.gmtime(datetime))
+
+def call(command):
+    assert isinstance(command, str)
+    cmd =  subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+    output = cmd.communicate()[0].decode().strip()
+    return cmd.returncode, output
+
+def gather_data_nc():
+    values = nodecontroller.copy()
+
+    # Waggle password lock
+    rc, out = call("shasum /etc/shadow | cut -d ' ' -f 1")
+    if rc == 0:
+        if out == "725f8d5ed683bef53bd9b1826ecfff44391d86dd":
+            values['pw_lock'] = True
+        elif out == "f76f01a49c45f26e32924246217b8eb6df0741fe":
+            values['pw_lock'] = False
+        else:
+            values['pw_lock'] = 'unknown'
+
+    # Git versions
+    repos = [
+        'core',
+        'nodecontroller',
+        'plugin_manager'
+    ]
+    for repo in repos:
+        rc, out = call("cd /usr/lib/waggle/%s; git describe --tag" % (repo,))
+        if rc == 0:
+            values['repositories'][repo] = out
+
+    # Devices
+    devices = [
+        ('wagman', '/dev/waggle_sysmon'),
+        ('metsense', '/dev/waggle_coresense'),
+        ('alphasense', '/dev/alphasense'),
+        ('modem', '/dev/attwan'),
+    ]
+    for device, path in devices:
+        if os.path.exists(path):
+            values['devices'][device] = True
+        else:
+            values['devices'][device] = False
+
+    # Beehive ping
+    rc, out = call("curl beehive/api/ > /dev/null 2>&1")
+    if rc == 0:
+        values['beehive']['ping'] = True
+    else:
+        values['beehive']['ping'] = False
+
+    # Beehive sshd
+    rc, out = call('ssh -i /usr/lib/waggle/SSL/node/key.pem -x -o "PasswordAuthentication no" -o "StrictHostKeyChecking no" root@beehive -p 20022 date > /dev/null 2>&1')
+    if rc == 0:
+        values['beehive']['sshd'] = True
+    else:
+        values['beehive']['sshd'] = False
+
+    # Waggle system services
+    services = [
+        'waggle-init.service',
+        'waggle-epoch.service',
+        'waggle-heartbeat.service',
+        'waggle-reverse-tunnel.service',
+        'waggle-wagman-driver.service',
+        'waggle-wwan.service',
+        'rabbitmq-server.service',
+    ]
+    for service in services:
+        rc, out = call("systemctl show %s -p ExecMainCode -p ExecMainStartTimestamp -p ActiveState -p SubState" % service)
+        if rc == 0:
+            values['services'][service] = out.split('\n')
+
+    return values
+
+
+def gather_data_ep():
+    values = edgeprocessor.copy()
+
+    # Waggle password lock
+    rc, out = call("shasum /etc/shadow | cut -d ' ' -f 1")
+    if rc == 0:
+        out = out
+        if out == "b0ac532c008523233768c56e5e247210f2495e47":
+            values['pw_lock'] = True
+        elif out == "8034856ebee2e336f1ddddc39618e9d59634421e":
+            values['pw_lock'] = False
+        else:
+            values['pw_lock'] = 'unknown'
+
+    # Git versions
+    repos = [
+        'core',
+        'edge_processor'
+    ]
+    for repo in repos:
+        rc, out = call("cd /usr/lib/waggle/%s; git describe --tag" % (repo,))
+        if rc == 0:
+            values['repositories'][repo] = out
+
+    # Devices
+    devices = [
+        ('camera_bottom', '/dev/waggle_cam_bottom'),
+        ('camera_top', '/dev/waggle_cam_top'),
+        ('microphone', '/dev/waggle_microphone'),
+    ]
+    for device, path in devices:
+        if os.path.exists(path):
+            values['devices'][device] = True
+        else:
+            values['devices'][device] = False
+
+    # Waggle system services
+    services = [
+        'waggle-init.service',
+        'waggle-heartbeat.service',
+        'rabbitmq-server.service',
+    ]
+    for service in services:
+        rc, out = call("systemctl show %s -p ExecMainCode -p ExecMainStartTimestamp -p ActiveState -p SubState" % service)
+        if rc == 0:
+            values['services'][service] = out.split('\n')
+
+    return values
+
+
+def gather_data_wagman():
+    values = wagman.copy()
+
+    rc, out = call('wagman-client ver')
+    if rc == 0:
+        items = out.split('\n')
+        for item in items:
+            subject, args = item.split(' ', 1)
+            if 'hw' in subject:
+                values['ver']['hw'] = args
+            elif 'ker' in subject:
+                values['ver']['kernel'] = args
+            elif 'time' in subject:
+                values['ver']['time'] = format_datetime(int(args))
+            elif 'git' in subject:
+                values['ver']['git'] = args
+
+
+    rc, out = call("journalctl -u waggle-wagman-driver --since=-65s | cut -d ':' -f 6")
+    if rc == 0:
+        items = out.split('\n')
+        for item in items:
+            subject, args = item.split(' ', 1)
+            if 'nc' in subject and 'heartbeat' in args:
+                values['heartbeats']['nc'] = True
+            elif 'gn' in subject and 'heartbeat' in args:
+                values['heartbeats']['ep'] = True
+            elif 'cs' in subject and 'heartbeat' in args:
+                values['heartbeats']['cs'] = True
+            elif 'cu' in subject:
+                sp = args.split(' ')
+                if len(sp) == 6:
+                    values['currents']['wagman'] = sp[0]
+                    values['currents']['nc'] = sp[1]
+                    values['currents']['ep'] = sp[2]
+                    values['currents']['cs'] = sp[3]
+                    values['currents']['port4'] = sp[4]
+                    values['currents']['port5'] = sp[5]
+            elif 'th' in subject:
+                sp = args.split(' ')
+                if len(sp) == 5:
+                    values['temperatures']['heatsink_nc'] = sp[0]
+                    values['temperatures']['heatsink_ep'] = sp[1]
+                    values['temperatures']['battery'] = sp[2]
+                    values['temperatures']['brainplate'] = sp[3]
+                    values['temperatures']['powersupply'] = sp[4]
+            elif 'date' in subject:
+                struct_time = time.strptime(args, '%Y %m %d %H %M %S')
+                values['date'] = format_datetime(calendar.timegm(struct_time))
+            elif 'env' in subject:
+                sp = args.split(' ')
+                if len(sp) == 2:
+                    values['env']['temperature'] = sp[0]
+                    values['env']['humidity'] = sp[1]
+            elif 'fails' in subject:
+                sp = args.split(' ')
+                if len(sp) == 5:
+                    values['fails']['nc'] = sp[0]
+                    values['fails']['ep'] = sp[1]
+                    values['fails']['cs'] = sp[2]
+                    values['fails']['port4'] = sp[3]
+                    values['fails']['port5'] = sp[4]
+            elif 'enabled' in subject:
+                sp = args.split(' ')
+                if len(sp) == 5:
+                    values['enabled']['nc'] = sp[0]
+                    values['enabled']['ep'] = sp[1]
+                    values['enabled']['cs'] = sp[2]
+                    values['enabled']['port4'] = sp[3]
+                    values['enabled']['port5'] = sp[4]
+            elif 'media':
+                sp = args.split(' ')
+                if len(sp) == 2:
+                    values['media']['nc'] = sp[0]
+                    values['media']['ep'] = sp[1]
+
+    # Real time clock
+    rc, out = call('wagman-client rtc')
+    if rc == 0:
+        values['rtc'] = format_datetime(int(out))
+
+    # Boot flags
+    rc, out = call('wagman-client bf')
+    if rc == 0:
+        values['boot_flag'] = out.replace('\n', ' ')
+
+    # Boots
+    rc, out = call('wagman-client boots')
+    if rc == 0:
+        values['boot_count'] = out
+
+    # Uptime
+    rc, out = call('wagman-client up')
+    if rc == 0:
+        values['uptime'] = out
+
+    # Bootloader phase boot flag
+    rc, out = call('wagman-client blf')
+    if rc == 0:
+        values['bootloader_nc_flag'] = out
+
+    return values
+
+def gather_data_common():
+    values = common.copy()
+
+    # Node_id
+    rc, out = call("ip link | grep -e '00:1e:06' | awk '{print $2}' | sed 's/://g' | tr '[:lower:]' '[:upper:]'")
+    if rc == 0:
+        values['node_id'] = out
+
+    # Boot_id
+    rc, out = call("hostnamectl | grep 'Boot ID' | tr -d ' ' | cut -d ':' -f 2")
+    if rc == 0:
+        values['boot_id'] = out
+
+    # Disk devices
+    rc, out = call('/usr/lib/waggle/core/scripts/detect_disk_devices.sh')
+    current_disk_device = ''
+    if rc == 0:
+        for items in out.split('\n'):
+            item, value = items.split('=', 1)
+            if 'CURRENT_DISK_DEVICE_NAME' == item:
+                values['disks']['current_disk']['name'] = value
+            elif 'CURRENT_DISK_DEVICE_TYPE' == item:
+                values['disks']['current_disk']['type'] = value
+            elif 'OTHER_DISK_DEVICE_NAME' == item:
+                values['disks']['other_disk']['name'] = value
+            elif 'OTHER_DISK_DEVICE_TYPE' == item:
+                values['disks']['other_disk']['type'] = value
+            elif 'CURRENT_DISK_DEVICE' == item:
+                current_disk_device = value
+
+    # Disk usage
+    if current_disk_device != '':
+        rc, out = call("df -m | grep %s | tr -s ' ' | cut -d ' ' -f1,2,5" % (current_disk_device,))
+        if rc == 0:
+            for part in out.split('\n'):
+                sp = part.split(' ')
+                if len(sp) == 3:
+                    sp[0] = sp[0].replace(current_disk_device, '')
+                    values['disks']['current_disk']['partitions'][sp[0] + '_total'] = round(int(sp[1]) / 1024.0, 2) # in GB
+                    values['disks']['current_disk']['partitions'][sp[0] + '_used'] = int(sp[2].replace('%', ''))
+
+    # RAM size
+    rc, out = call("cat /proc/meminfo | grep Mem | tr -s ' '")
+    if rc == 0:
+        for part in out.split('\n'):
+            sp = part.split(' ')
+            if len(sp) == 3:
+                if 'MemTotal' in sp[0]:
+                    values['ram']['total'] = round(int(sp[1]) / 1024.0 / 1024.0, 2) # in GB
+                elif 'MemFree' in sp[0]:
+                    values['ram']['free'] = round(int(sp[1]) / 1024.0 / 1024.0, 2) # in GB
+
+    # CPU temperature
+    rc, out = call("cat /sys/class/thermal/thermal_zone0/temp")
+    if rc == 0:
+        temperature = int(out) / 1000.0
+        values['cpu_temp'] = temperature # in C
+
+    # Waggle filesystem lock
+    if os.access('/', os.W_OK):
+        values['fs_lock'] = False
+    else:
+        values['fs_lock'] = True
+
+    # Time
+    values['current_time'] = format_datetime(time.time())
+
+    # Uptime / Idletime
+    rc, out = call("cat /proc/uptime")
+    if rc == 0:
+        sp = out.split(' ')
+        if len(sp) == 2:
+            values['uptime'] = int(float(sp[0]))
+            values['idletime'] = int(float(sp[1]))
+
+    # Load average
+    rc, out = call("cat /proc/loadavg | cut -d ' ' -f 1-3")
+    if rc == 0:
+        sp = out.split(' ')
+        if len(sp) == 3:
+            values['load_1'] = float(sp[0])
+            values['load_5'] = float(sp[1])
+            values['load_10'] = float(sp[2])
+
+    # Heartbeat mode
+    rc, out = call("cat /etc/waggle/hbmode")
+    if rc == 0:
+        values['hbmode'] = out
+
+    # IP address
+    rc, out = call("hostname -I")
+    if rc == 0:
+        for ip in out.split(' '):
+            if "10.31.81." not in ip and ip != "127.0.0.1":
+                values['ipaddress'] = ip
+                break
+
+    # When RMQ is available
+    rc, out = call('rabbitmqctl node_health_check | grep "Health check passed" | wc -l')
+    if rc == 0 and '1' in out:
+        # RMQ queues
+        _rc, _out = call('rabbitmqctl list_queues | grep -v Listing | grep -v amq')
+        if _rc == 0:
+            values['rabbitmq']['queues'] = _out.split('\n')
+
+        # RMQ exchanges
+        _rc, _out = call('rabbitmqctl list_exchanges | grep -v Listing | grep -v amq')
+        if _rc == 0:
+            values['rabbitmq']['exchanges'] = _out.split('\n')
+
+        _rc, _out = call('rabbitmqctl list_connections name user send_cnt | grep -v Listing')
+        if _rc == 0:
+            values['rabbitmq']['connections'] = _out.split('\n')
+
+        _rc, _out = call("rabbitmqctl eval 'rabbit_shovel_status:status().'")
+        if _rc == 0:
+            values['rabbitmq']['shovels'] = _out.split('\n')
+
+    return values
+
+
+def report_to_beehive(data):
+    assert isinstance(data, dict)
+
+    ssl_options = {
+    'ca_certs': '/usr/lib/waggle/SSL/waggleca/cacert.pem',
+    'certfile': '/usr/lib/waggle/SSL/node/cert.pem',
+    'keyfile': '/usr/lib/waggle/SSL/node/key.pem',
+    'cert_reqs': ssl.CERT_REQUIRED,
+    }
+
+    credentials = pika.PlainCredentials(username='node',
+                                        password='waggle')
+
+    parameters = pika.ConnectionParameters(host='beehive1.mcs.anl.gov',
+                                           port=23181,
+                                           credentials=credentials,
+                                           ssl=True,
+                                           ssl_options=ssl_options,
+                                           connection_attempts=3,
+                                           retry_delay=10,
+                                           socket_timeout=20)
+
+    connection = pika.BlockingConnection(parameters)
+    channel = connection.channel()
+
+    channel.basic_publish(exchange='metrics',
+                          routing_key='metric',
+                          properties=pika.BasicProperties(
+                            timestamp=int(time.time() * 1000),
+                            reply_to=data['nodecontroller']['node_id']),
+                          body=json.dumps(data))
+
+
+def print_hrf(report):
+    pass
+
+
+def print_plaintext(report, prefix='', delimiter='/'):
+    for key, value in sorted(report.items()):
+        if isinstance(value, dict):
+            print_plaintext(value, prefix + key + delimiter)
+        else:
+            print('%s%s=%s' % (prefix, key, value))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--beehive', action='store_true', help='Report the result to beehive')
+    parser.add_argument('--hrf', action='store_true', help='Print the result in human readable form')
+    parser.add_argument('--json', action='store_true', help='Print the result in a json')
+    parser.add_argument('-v', action='store_true', help='Verbose')
+    args = parser.parse_args()
+
+    platform = None
+    rc, out = call('cat /proc/cpuinfo | grep Hardware | cut -d ":" -f 2 | tr -d " "')
+    if rc == 0:
+        platform = out
+        if args.v:
+            print('Platform is %s' % (platform,))
+    else:
+        print('No platform found')
+        exit(1)
+
+    time_start = time.time()
+
+    report = {}
+    if 'ODROIDC' in platform:
+        result_common = gather_data_common()
+        result_nc = gather_data_nc()
+
+        # Information from ep
+        result_ep = {}
+        rc, out = call('/usr/lib/waggle/nodecontroller/scripts/eplogin date > /dev/null 2>&1')
+        if rc == 0:
+            result_nc['local_sshd'] = 'True'
+
+            _rc, _out = call('/usr/lib/waggle/nodecontroller/scripts/eplogin /usr/lib/waggle/core/scripts/status-service --json')
+            if _rc == 0:
+                _out_json = json.loads(_out)
+                result_ep = _out_json['edgeprocessor']
+        else:
+            result_nc['local_sshd'] = 'False'
+        result_wagman = gather_data_wagman()
+
+        report['nodecontroller'] = result_common
+        report['nodecontroller'].update(result_nc)
+        report['edgeprocessor'] = result_ep
+        report['wagman'] = result_wagman
+    else:
+        result_common = gather_data_common()
+        result_ep = gather_data_ep()
+        report['edgeprocessor'] = result_common
+        report['edgeprocessor'].update(result_ep)
+
+    if args.beehive:
+        report_to_beehive(report)
+    if args.hrf:
+        print_plaintext(report)
+    elif args.json:
+        print(json.dumps(report))
+
+    time_end = time.time()
+    if args.v:
+        print('%2f s elapsed' % (time_end - time_start,))
