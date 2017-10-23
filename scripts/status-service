@@ -9,6 +9,7 @@ import os
 import json
 import subprocess
 import calendar
+import ssl
 
 '''
     Gathers information for system metrics
@@ -543,7 +544,10 @@ def report_to_beehive(data):
     channel = connection.channel()
 
     channel.basic_publish(exchange='metrics',
-                          routing_key='',
+                          routing_key='metric',
+                          properties=pika.BasicProperties(
+                            timestamp=int(time.time() * 1000),
+                            reply_to=data['nodecontroller']['node_id']),
                           body=json.dumps(data))
 
 
@@ -614,8 +618,6 @@ if __name__ == '__main__':
         print_plaintext(report)
     elif args.json:
         print(json.dumps(report))
-    else:
-        print_plaintext(report)
 
     time_end = time.time()
     if args.v:
