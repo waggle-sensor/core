@@ -55,7 +55,6 @@ common = {
     'rabbitmq': {
         'queues': None,
         'exchanges': None,
-        'connections': None,
         'shovels': None,
     },
 }
@@ -495,25 +494,34 @@ def gather_data_common():
                 break
 
     # When RMQ is available
-    rc, out = call('rabbitmqctl node_health_check | grep "Health check passed" | wc -l')
-    if rc == 0 and '1' in out:
-        # RMQ queues
-        _rc, _out = call('rabbitmqctl list_queues | grep -v Listing | grep -v amq')
-        if _rc == 0:
-            values['rabbitmq']['queues'] = _out.split('\n')
+    rc, out = call('systemctl show rabbitmq-server.service -p ActiveState -p SubState')
+    if rc == 0:
+        if 'active' in out and 'running' in out:
+            # RMQ queues
+            _rc, _out = call('rabbitmqctl list_queues name | grep -v Listing | grep -v amq')
+            if _rc == 0:
+                values['rabbitmq']['queues'] = _out.split('\n')
 
-        # RMQ exchanges
-        _rc, _out = call('rabbitmqctl list_exchanges | grep -v Listing | grep -v amq')
-        if _rc == 0:
-            values['rabbitmq']['exchanges'] = _out.split('\n')
+            # RMQ exchanges
+            _rc, _out = call('rabbitmqctl list_exchanges name | grep -v Listing | grep -v amq')
+            if _rc == 0:
+                values['rabbitmq']['exchanges'] = _out.split('\n')
 
-        _rc, _out = call('rabbitmqctl list_connections name user send_cnt | grep -v Listing')
-        if _rc == 0:
-            values['rabbitmq']['connections'] = _out.split('\n')
+            _rc, _out = call("rabbitmqctl eval 'rabbit_shovel_status:status().'")
+            if _rc == 0:
+                shovels = [
+                    'logs',
+                    'data',
+                    'images',
+                ]
+                active_shovels = []
 
-        _rc, _out = call("rabbitmqctl eval 'rabbit_shovel_status:status().'")
-        if _rc == 0:
-            values['rabbitmq']['shovels'] = _out.split('\n')
+                for shovel in shovels:
+                    ret = re.search('%s.*running' % (shovel,), _out, re.DOTALL)
+                    if ret is not None:
+                        active_shovels.append(shovel)
+
+                values['rabbitmq']['shovels'] = active_shovels
 
     return values
 
