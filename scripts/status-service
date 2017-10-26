@@ -578,6 +578,7 @@ if __name__ == '__main__':
     parser.add_argument('--beehive', action='store_true', help='Report the result to beehive')
     parser.add_argument('--hrf', action='store_true', help='Print the result in human readable form')
     parser.add_argument('--json', action='store_true', help='Print the result in a json')
+    parser.add_argument('--silent', action='store_true', help='Do not print anything')
     parser.add_argument('-v', action='store_true', help='Verbose')
     args = parser.parse_args()
 
@@ -624,7 +625,9 @@ if __name__ == '__main__':
 
     if args.beehive:
         report_to_beehive(report)
-    if args.hrf:
+    if args.silent:
+        pass
+    elif args.hrf:
         print_plaintext(report)
     elif args.json:
         print(json.dumps(report))
