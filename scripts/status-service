@@ -325,44 +325,44 @@ def gather_data_wagman():
             elif 'cu' in subject:
                 sp = args.split(' ')
                 if len(sp) == 6:
-                    values['currents']['wagman'] = sp[0]
-                    values['currents']['nc'] = sp[1]
-                    values['currents']['ep'] = sp[2]
-                    values['currents']['cs'] = sp[3]
-                    values['currents']['port4'] = sp[4]
-                    values['currents']['port5'] = sp[5]
+                    values['currents']['wagman'] = int(sp[0])
+                    values['currents']['nc'] = int(sp[1])
+                    values['currents']['ep'] = int(sp[2])
+                    values['currents']['cs'] = int(sp[3])
+                    values['currents']['port4'] = int(sp[4])
+                    values['currents']['port5'] = int(sp[5])
             elif 'th' in subject:
                 sp = args.split(' ')
                 if len(sp) == 5:
-                    values['temperatures']['heatsink_nc'] = sp[0]
-                    values['temperatures']['heatsink_ep'] = sp[1]
-                    values['temperatures']['battery'] = sp[2]
-                    values['temperatures']['brainplate'] = sp[3]
-                    values['temperatures']['powersupply'] = sp[4]
+                    values['temperatures']['heatsink_nc'] = int(sp[0])
+                    values['temperatures']['heatsink_ep'] = int(sp[1])
+                    values['temperatures']['battery'] = int(sp[2])
+                    values['temperatures']['brainplate'] = int(sp[3])
+                    values['temperatures']['powersupply'] = int(sp[4])
             elif 'date' in subject:
                 struct_time = time.strptime(args, '%Y %m %d %H %M %S')
                 values['date'] = format_datetime(calendar.timegm(struct_time))
             elif 'env' in subject:
                 sp = args.split(' ')
                 if len(sp) == 2:
-                    values['env']['temperature'] = sp[0]
-                    values['env']['humidity'] = sp[1]
+                    values['env']['temperature'] = float(sp[0])
+                    values['env']['humidity'] = float(sp[1])
             elif 'fails' in subject:
                 sp = args.split(' ')
                 if len(sp) == 5:
-                    values['fails']['nc'] = sp[0]
-                    values['fails']['ep'] = sp[1]
-                    values['fails']['cs'] = sp[2]
-                    values['fails']['port4'] = sp[3]
-                    values['fails']['port5'] = sp[4]
+                    values['fails']['nc'] = int(sp[0])
+                    values['fails']['ep'] = int(sp[1])
+                    values['fails']['cs'] = int(sp[2])
+                    values['fails']['port4'] = int(sp[3])
+                    values['fails']['port5'] = int(sp[4])
             elif 'enabled' in subject:
                 sp = args.split(' ')
                 if len(sp) == 5:
-                    values['enabled']['nc'] = sp[0]
-                    values['enabled']['ep'] = sp[1]
-                    values['enabled']['cs'] = sp[2]
-                    values['enabled']['port4'] = sp[3]
-                    values['enabled']['port5'] = sp[4]
+                    values['enabled']['nc'] = int(sp[0])
+                    values['enabled']['ep'] = int(sp[1])
+                    values['enabled']['cs'] = int(sp[2])
+                    values['enabled']['port4'] = int(sp[3])
+                    values['enabled']['port5'] = int(sp[4])
             elif 'media':
                 sp = args.split(' ')
                 if len(sp) == 2:
@@ -377,17 +377,17 @@ def gather_data_wagman():
     # Boot flags
     rc, out = call('wagman-client bf')
     if rc == 0:
-        values['boot_flag'] = out.replace('\n', ' ')
+        values['boot_flag'] = out.split('\n')
 
     # Boots
     rc, out = call('wagman-client boots')
     if rc == 0:
-        values['boot_count'] = out
+        values['boot_count'] = int(out)
 
     # Uptime
     rc, out = call('wagman-client up')
     if rc == 0:
-        values['uptime'] = out
+        values['uptime'] = int(out)
 
     # Bootloader phase boot flag
     rc, out = call('wagman-client blf')
@@ -507,21 +507,23 @@ def gather_data_common():
             if _rc == 0:
                 values['rabbitmq']['exchanges'] = _out.split('\n')
 
-            _rc, _out = call("rabbitmqctl eval 'rabbit_shovel_status:status().'")
-            if _rc == 0:
-                shovels = [
-                    'logs',
-                    'data',
-                    'images',
-                ]
-                active_shovels = []
+            _rc, _out = call('rabbitmq-plugins list -E -e rabbitmq_shovel | grep rabbitmq_shovel | wc -l')
+            if _rc == 0 and _out != '0':
+                __rc, __out = call("rabbitmqctl eval 'rabbit_shovel_status:status().'")
+                if __rc == 0:
+                    shovels = [
+                        'logs',
+                        'data',
+                        'images',
+                    ]
+                    active_shovels = []
 
-                for shovel in shovels:
-                    ret = re.search('%s.*running' % (shovel,), _out, re.DOTALL)
-                    if ret is not None:
-                        active_shovels.append(shovel)
+                    for shovel in shovels:
+                        ret = re.search('%s.*running' % (shovel,), __out, re.DOTALL)
+                        if ret is not None:
+                            active_shovels.append(shovel)
 
-                values['rabbitmq']['shovels'] = active_shovels
+                    values['rabbitmq']['shovels'] = active_shovels
 
     return values
 
@@ -600,14 +602,14 @@ if __name__ == '__main__':
         result_ep = {}
         rc, out = call('/usr/lib/waggle/nodecontroller/scripts/eplogin date > /dev/null 2>&1')
         if rc == 0:
-            result_nc['local_sshd'] = 'True'
+            result_nc['local_sshd'] = True
 
             _rc, _out = call('/usr/lib/waggle/nodecontroller/scripts/eplogin /usr/lib/waggle/core/scripts/status-service --json')
             if _rc == 0:
                 _out_json = json.loads(_out)
                 result_ep = _out_json['edgeprocessor']
         else:
-            result_nc['local_sshd'] = 'False'
+            result_nc['local_sshd'] = False
         result_wagman = gather_data_wagman()
 
         report['nodecontroller'] = result_common
@@ -625,6 +627,8 @@ if __name__ == '__main__':
     if args.hrf:
         print_plaintext(report)
     elif args.json:
+        print(json.dumps(report))
+    else:
         print(json.dumps(report))
 
     time_end = time.time()
