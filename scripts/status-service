@@ -203,7 +203,7 @@ def gather_data_nc():
         ('wagman', '/dev/waggle_sysmon'),
         ('metsense', '/dev/waggle_coresense'),
         ('alphasense', '/dev/alphasense'),
-        ('modem', '/dev/attwan'),
+        ('modem', '/dev/attwwan'),
     ]
     for device, path in devices:
         if os.path.exists(path):
