@@ -310,8 +310,8 @@ def gather_data_wagman():
             elif 'git' in subject:
                 values['ver']['git'] = args
 
-
-    rc, out = call("journalctl -u waggle-wagman-driver --since=-65s | cut -d ':' -f 6")
+    # Get the last elements after splitting lines...
+    rc, out = call("journalctl -u waggle-wagman-driver --since=-65s | rev | cut -d ':' -f 1 | rev")
     if rc == 0:
         items = out.split('\n')
         for item in items:
@@ -607,8 +607,11 @@ if __name__ == '__main__':
 
             _rc, _out = call('/usr/lib/waggle/nodecontroller/scripts/eplogin /usr/lib/waggle/core/scripts/status-service --json')
             if _rc == 0:
-                _out_json = json.loads(_out)
-                result_ep = _out_json['edgeprocessor']
+                try:
+                    _out_json = json.loads(_out)
+                    result_ep = _out_json['edgeprocessor']
+                except:
+                    result_ep = {'returncode': 1}
         else:
             result_nc['local_sshd'] = False
         result_wagman = gather_data_wagman()
