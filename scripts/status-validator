@@ -260,15 +260,23 @@ def main(data, failed_only, output_type):
         nc_criteria.update(valid_nodecontroller)
         nc_output = validate(data['nodecontroller'], nc_criteria, prefix='nodecontroller/', print_only_when_failed=failed_only)
         result['nodecontroller'] = nc_criteria
+    else:
+        print(' [ INFO ] Nodecontroller results not exist in data')
+
     if 'edgeprocessor' in data:
         ep_criteria = valid_common.copy()
         ep_criteria.update(valid_edgeprocessor)
         ep_output = validate(data['edgeprocessor'], ep_criteria, prefix='edgeprocessor/', print_only_when_failed=failed_only)
         result['edgeprocessor'] = ep_output
+    else:
+        print(' [ INFO ] Edgeprocessor results not exist in data')
+
     if 'wagman' in data:
         wagman_criteria = valid_wagman.copy()
         wagman_output = validate(data['wagman'], wagman_criteria, prefix='wagman/', print_only_when_failed=failed_only)
         result['wagman'] = wagman_output
+    else:
+        print(' [ INFO ] Wagman results not exist in data')
 
 
 if __name__ == '__main__':

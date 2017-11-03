@@ -609,17 +609,19 @@ if __name__ == '__main__':
             if _rc == 0:
                 try:
                     _out_json = json.loads(_out)
-                    result_ep = _out_json['edgeprocessor']
+                    report['edgeprocessor'] = _out_json['edgeprocessor']
                 except:
-                    result_ep = {'returncode': 1}
+                    pass
         else:
             result_nc['local_sshd'] = False
-        result_wagman = gather_data_wagman()
+
+        if os.path.exists('/dev/waggle_sysmon'):
+            result_wagman = gather_data_wagman()
+            report['wagman'] = result_wagman
 
         report['nodecontroller'] = result_common
         report['nodecontroller'].update(result_nc)
-        report['edgeprocessor'] = result_ep
-        report['wagman'] = result_wagman
+        
     else:
         result_common = gather_data_common()
         result_ep = gather_data_ep()
