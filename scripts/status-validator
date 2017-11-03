@@ -1,0 +1,296 @@
+#!/usr/bin/env python3
+
+import sys
+import time
+import json
+import argparse
+
+valid_common = {
+    'node_id': {'length': 12, 'contain': '001e06'},
+    'boot_id': {'length': 32},
+    'disks': {
+        'current_disk': {
+            'type': {'contain': ['MMC', 'SD']},
+            'name': {'contain': 'mmcblk'},
+            'partitions': {
+                'p1_total': {'range': (0.0, 16.0)},           # GB
+                'p1_used': {'range': (0, 100)},            # %
+                'p2_total': {'range': (0.0, 16.0)},           # GB
+                'p2_used': {'range': (0, 90)},            # %
+                'p3_total': {'range': (0.0, 16.0)},           # GB
+                'p3_used': {'range': (0, 90)},            # %
+            },
+        },
+        'other_disk': {
+            'type': {'contain': ['MMC', 'SD']},
+            'name': {'contain': 'mmcblk'},
+        },
+    },
+    'ram' : {
+        'total': {'range': (0.0, 16.0)},                      # GB
+        'free': {'range': (0.0, 16.0)},                       # GB
+    },
+    'cpu_temp': {'range': (0, 100)},                        # C
+    'fs_lock': {'equal': True},
+    'pw_lock': {'equal': True},
+    'current_time': {'after': '2017/01/01 00:00:00'},
+    'uptime': {'range': (0, 4294967296)},
+    'idletime': {'range': (0, 4294967296)},
+    'hbmode': {'equal': 'wellness'},
+}
+
+valid_nodecontroller = {
+    'ipaddress': {'contain': '.'},
+    'load_1': {'range': (0.0, 4.0)},
+    'load_5': {'range': (0.0, 4.0)},
+    'load_10': {'range': (0.0, 4.0)},
+    'rabbitmq': {
+        'queues': {'contain': ['data', 'logs']},
+        'exchanges': {'contain': ['data.fanout', 'logs.fanout']},
+        'shovels': {'contain': ['data', 'logs', 'images']},
+    },
+    'repositories': {
+        'core': {'contain': '2.8'},
+        'nodecontroller': {'contain': '2.8'},
+        'plugin_manager': {'contain': '2.8'},
+    },
+    'devices': {
+        'wagman': {'equal': True},
+        'metsense': {'equal': True},
+        'alphasense': {'equal': False},
+        'modem': {'equal': True},
+    },
+    'beehive': {
+        'ping': {'equal': True},
+        'sshd': {'equal': True},
+    },
+    'services': {
+        'waggle-init.service': {'contain': ['ActiveState=inactive', 'Substate=dead']},
+        'waggle-epoch.service': {'contain': ['ActiveState=active', 'Substate=running']},
+        'waggle-heartbeat.service': {'contain': ['ActiveState=active', 'Substate=running']},
+        'waggle-reverse-tunnel.service': {'contain': ['ActiveState=active', 'Substate=running']},
+        'waggle-wagman-driver.service': {'contain': ['ActiveState=active', 'Substate=running']},
+        'waggle-wwan.service': {'contain': ['ActiveState=active', 'Substate=running']},
+        'rabbitmq-server.service': {'contain': ['ActiveState=active', 'Substate=running']},
+    },
+    'local_sshd': {'equal': True},
+}
+
+valid_edgeprocessor = {
+    'ipaddress': {'equal': None},
+    'load_1': {'range': (0.0, 8.0)},
+    'load_5': {'range': (0.0, 8.0)},
+    'load_10': {'range': (0.0, 8.0)},
+    'rabbitmq': {
+        'queues': {'contain': ['images']},
+        'exchanges': {'contain': ['image_pipeline']},
+    },
+    'repositories': {
+        'core': {'contain': '2.8'},
+        'edge_processor': {'contain': '2.8'},
+    },
+    'devices': {
+        'camera_top': {'equal': True},
+        'camera_bottom': {'equal': True},
+        'microphone': {'equal': True},
+    },
+    'services': {
+        'waggle-init.service': {'contain': ['ActiveState=inactive', 'Substate=dead']},
+        'waggle-heartbeat.service': {'contain': ['ActiveState=active', 'Substate=running']},
+        'rabbitmq-server.service': {'contain': ['ActiveState=active', 'Substate=running']},
+    },
+}
+
+valid_wagman = {
+    'ver': {
+        'hw': {'equal': '3.1'},
+        'kernel': {'equal': '1.0.4'},
+        'time': {'equal': '2017/03/18 03:18:50'},
+        'git': {'equal': 'a1e3'},
+    },
+    'boot_flag': {'contain': 'EXTRF'},
+    'boot_count': {'range': (0, 65536)},
+    'bootloader_nc_flag': {'equal': 'off'},
+    'heartbeats': {
+        'nc': {'equal': True},
+        'ep': {'equal': True},
+        'cs': {'equal': True},
+    },
+    'currents': {
+        'wagman': {'range': (80, 500)},
+        'nc': {'range': (80, 500)},
+        'ep': {'range': (80, 500)},
+        'cs': {'range': (80, 500)},
+        'port4': {'range': (80, 500)},
+        'port5': {'range': (80, 500)},
+    },
+    'temperatures': {
+        'heatsink_nc': {'range': (1, 1000)},
+        'heatsink_ep': {'range': (1, 1000)},
+        'battery': {'range': (1, 1000)},
+        'brainplate': {'range': (1, 1000)},
+        'powersupply': {'range': (1, 1000)},
+    },
+    'date': {'after': '2017/01/01 00:00:00'},
+    'rtc': {'after': '2017/01/01 00:00:00'},
+    'uptime': {'range': (0, 4294967296)},
+    'env': {
+        'temperature': {'range': (-10.0, 60.0)},
+        'humidity': {'range': (0.0, 100.0)},
+    },
+    'fails': {
+        'nc': {'range': (0, 10)},
+        'ep': {'range': (0, 10)},
+        'cs': {'range': (0, 10)},
+        'port4': {'equal': 0},
+        'port5': {'equal': 0},
+    },
+    'enabled': {
+        'nc': {'equal': 1},
+        'ep': {'equal': 1},
+        'cs': {'equal': 1},
+        'port4': {'equal': 0},
+        'port5': {'equal': 0},
+    },
+    'media': {
+        'nc': {'equal': 'sd'},
+        'ep': {'equal': 'sd'},
+    },
+}
+
+def validate_equal(value, value2):
+    if isinstance(value, str):
+        value = value.capitalize()
+    if isinstance(value2, str):
+        value2 = value2.capitalize()
+    return True if value == value2 else False
+
+'''
+    value contains word
+    values contains word
+    values contains words
+    value contains words
+'''
+def validate_contain(value, word):
+    if value is None:
+        return False
+    if isinstance(word, str):
+        word = word.lower()
+        if isinstance(value, list):
+            for v in value:
+                if word in v.lower():
+                    return True
+            return False
+        else:
+            return True if word in value.lower() else False
+    elif isinstance(word, list):
+        if isinstance(value, str):
+            for w in word:
+                if value.lower() in w.lower():
+                    return True
+            return False
+        if isinstance(value, list):
+            ret = 0
+            for w in word:
+                for v in value:
+                    if w.lower() in v.lower():
+                        ret += 1
+                        break
+            return True if ret == len(word) else False
+        else:
+            return False
+    else:
+        return False
+
+def validate_length(value, length):
+    if value is None:
+        return False
+    return True if len(value) == length else False
+
+def validate_range(value, valid_range):
+    assert isinstance(valid_range, tuple)
+    if value is None:
+        return False
+    return True if value >= valid_range[0] and value <= valid_range[1] else False
+
+
+datetime_format = '%Y/%m/%d %H:%M:%S'
+def validate_after(value, base):
+    if value is None:
+        return False
+    datetime_value = time.strptime(value, datetime_format)
+    datetime_base = time.strptime(base, datetime_format)
+    return datetime_value > datetime_base
+
+
+def validate(data, criteria, prefix='', print_only_when_failed=False):
+    for key, criterion in sorted(criteria.items()):
+        if key not in data:
+            print(' [ ERR  ] %s%s does not exist in data' % (prefix, key))
+        elif isinstance(data[key], dict):
+            validate(data[key], criteria[key], prefix=prefix+key+'/', print_only_when_failed=print_only_when_failed)
+        else:
+            data_value = data[key]
+            ret = False
+            for subject in criterion:
+                expected_value = criterion[subject]
+                
+                if 'equal' in subject:
+                    ret = validate_equal(data_value, expected_value)
+                elif 'contain' in subject:
+                    ret = validate_contain(data_value, expected_value)
+                elif 'length' in subject:
+                    ret = validate_length(data_value, expected_value)
+                elif 'range' in subject:
+                    ret = validate_range(data_value, expected_value)
+                elif 'after' in subject:
+                    ret = validate_after(data_value, expected_value)
+
+            if ret:
+                if not print_only_when_failed:
+                    print(' [ %s ] %s%s = %s' % ('PASS', prefix, key, data_value))
+            else:
+                print(' [ %s ] %s%s = %s' % ('FAIL', prefix, key, data_value))
+
+
+def main(data, failed_only, output_type):
+    result = {}
+    if 'nodecontroller' in data:
+        nc_criteria = valid_common.copy()
+        nc_criteria.update(valid_nodecontroller)
+        nc_output = validate(data['nodecontroller'], nc_criteria, prefix='nodecontroller/', print_only_when_failed=failed_only)
+        result['nodecontroller'] = nc_criteria
+    if 'edgeprocessor' in data:
+        ep_criteria = valid_common.copy()
+        ep_criteria.update(valid_edgeprocessor)
+        ep_output = validate(data['edgeprocessor'], ep_criteria, prefix='edgeprocessor/', print_only_when_failed=failed_only)
+        result['edgeprocessor'] = ep_output
+    if 'wagman' in data:
+        wagman_criteria = valid_wagman.copy()
+        wagman_output = validate(data['wagman'], wagman_criteria, prefix='wagman/', print_only_when_failed=failed_only)
+        result['wagman'] = wagman_output
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--only-error', action='store_true', help='Report only failed items')
+    parser.add_argument('--hrf', action='store_true', help='Print the result in human readable form')
+    parser.add_argument('--json', action='store_true', help='Print the result in a json')
+    args = parser.parse_args()
+
+    if not sys.stdin.isatty():
+        str_result = sys.stdin.read()
+        json_result = ''
+        try:
+            json_result = json.loads(str_result)
+        except Exception as ex:
+            print('Could not load the test result: %s' % (ex,))
+            exit(1)
+
+        main(json_result, args.only_error, args.json)
+    else:
+        parser.print_help()
+        print('call:')
+        print('      status-service --json | status-validator')
+        print('   or status-validator < INPUT.json')
+        exit(1)
