@@ -554,11 +554,13 @@ def report_to_beehive(data):
     channel = connection.channel()
 
     channel.basic_publish(exchange='metrics',
-                          routing_key='metric',
+                          routing_key='',
                           properties=pika.BasicProperties(
                             timestamp=int(time.time() * 1000),
                             reply_to=data['nodecontroller']['node_id']),
                           body=json.dumps(data))
+
+    channel.close()
 
 
 def print_hrf(report):
