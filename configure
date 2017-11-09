@@ -42,7 +42,7 @@ rsync -a etc/systemd/ /etc/systemd
 systemctl enable waggle-heartbeat.service
 systemctl enable waggle-init.service
 systemctl enable rabbitmq-server.service
-systemctl set-default waggle-platform
+systemctl set-default waggle-core.target
 
 # setup .screen
 ln -sf ${current_dir}/etc/dot_screen /home/waggle/.screen

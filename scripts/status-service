@@ -315,59 +315,62 @@ def gather_data_wagman():
     if rc == 0:
         items = out.split('\n')
         for item in items:
-            subject, args = item.split(' ', 1)
-            if 'nc' in subject and 'heartbeat' in args:
-                values['heartbeats']['nc'] = True
-            elif 'gn' in subject and 'heartbeat' in args:
-                values['heartbeats']['ep'] = True
-            elif 'cs' in subject and 'heartbeat' in args:
-                values['heartbeats']['cs'] = True
-            elif 'cu' in subject:
-                sp = args.split(' ')
-                if len(sp) == 6:
-                    values['currents']['wagman'] = int(sp[0])
-                    values['currents']['nc'] = int(sp[1])
-                    values['currents']['ep'] = int(sp[2])
-                    values['currents']['cs'] = int(sp[3])
-                    values['currents']['port4'] = int(sp[4])
-                    values['currents']['port5'] = int(sp[5])
-            elif 'th' in subject:
-                sp = args.split(' ')
-                if len(sp) == 5:
-                    values['temperatures']['heatsink_nc'] = int(sp[0])
-                    values['temperatures']['heatsink_ep'] = int(sp[1])
-                    values['temperatures']['battery'] = int(sp[2])
-                    values['temperatures']['brainplate'] = int(sp[3])
-                    values['temperatures']['powersupply'] = int(sp[4])
-            elif 'date' in subject:
-                struct_time = time.strptime(args, '%Y %m %d %H %M %S')
-                values['date'] = format_datetime(calendar.timegm(struct_time))
-            elif 'env' in subject:
-                sp = args.split(' ')
-                if len(sp) == 2:
-                    values['env']['temperature'] = float(sp[0])
-                    values['env']['humidity'] = float(sp[1])
-            elif 'fails' in subject:
-                sp = args.split(' ')
-                if len(sp) == 5:
-                    values['fails']['nc'] = int(sp[0])
-                    values['fails']['ep'] = int(sp[1])
-                    values['fails']['cs'] = int(sp[2])
-                    values['fails']['port4'] = int(sp[3])
-                    values['fails']['port5'] = int(sp[4])
-            elif 'enabled' in subject:
-                sp = args.split(' ')
-                if len(sp) == 5:
-                    values['enabled']['nc'] = int(sp[0])
-                    values['enabled']['ep'] = int(sp[1])
-                    values['enabled']['cs'] = int(sp[2])
-                    values['enabled']['port4'] = int(sp[3])
-                    values['enabled']['port5'] = int(sp[4])
-            elif 'media':
-                sp = args.split(' ')
-                if len(sp) == 2:
-                    values['media']['nc'] = sp[0]
-                    values['media']['ep'] = sp[1]
+            try:
+                subject, args = item.split(' ', 1)
+                if 'nc' in subject and 'heartbeat' in args:
+                    values['heartbeats']['nc'] = True
+                elif 'gn' in subject and 'heartbeat' in args:
+                    values['heartbeats']['ep'] = True
+                elif 'cs' in subject and 'heartbeat' in args:
+                    values['heartbeats']['cs'] = True
+                elif 'cu' in subject:
+                    sp = args.split(' ')
+                    if len(sp) == 6:
+                        values['currents']['wagman'] = int(sp[0])
+                        values['currents']['nc'] = int(sp[1])
+                        values['currents']['ep'] = int(sp[2])
+                        values['currents']['cs'] = int(sp[3])
+                        values['currents']['port4'] = int(sp[4])
+                        values['currents']['port5'] = int(sp[5])
+                elif 'th' in subject:
+                    sp = args.split(' ')
+                    if len(sp) == 5:
+                        values['temperatures']['heatsink_nc'] = int(sp[0])
+                        values['temperatures']['heatsink_ep'] = int(sp[1])
+                        values['temperatures']['battery'] = int(sp[2])
+                        values['temperatures']['brainplate'] = int(sp[3])
+                        values['temperatures']['powersupply'] = int(sp[4])
+                elif 'date' in subject:
+                    struct_time = time.strptime(args, '%Y %m %d %H %M %S')
+                    values['date'] = format_datetime(calendar.timegm(struct_time))
+                elif 'env' in subject:
+                    sp = args.split(' ')
+                    if len(sp) == 2:
+                        values['env']['temperature'] = float(sp[0])
+                        values['env']['humidity'] = float(sp[1])
+                elif 'fails' in subject:
+                    sp = args.split(' ')
+                    if len(sp) == 5:
+                        values['fails']['nc'] = int(sp[0])
+                        values['fails']['ep'] = int(sp[1])
+                        values['fails']['cs'] = int(sp[2])
+                        values['fails']['port4'] = int(sp[3])
+                        values['fails']['port5'] = int(sp[4])
+                elif 'enabled' in subject:
+                    sp = args.split(' ')
+                    if len(sp) == 5:
+                        values['enabled']['nc'] = int(sp[0])
+                        values['enabled']['ep'] = int(sp[1])
+                        values['enabled']['cs'] = int(sp[2])
+                        values['enabled']['port4'] = int(sp[3])
+                        values['enabled']['port5'] = int(sp[4])
+                elif 'media':
+                    sp = args.split(' ')
+                    if len(sp) == 2:
+                        values['media']['nc'] = sp[0]
+                        values['media']['ep'] = sp[1]
+            except:
+                pass
 
     # Real time clock
     rc, out = call('wagman-client rtc')
