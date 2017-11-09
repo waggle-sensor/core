@@ -1,7 +1,6 @@
 [Unit]
 Description=Initializes Waggle system.
 After=waggle-core.target
-Before=waggle-registration.service
 
 [Service]
 Type=oneshot
