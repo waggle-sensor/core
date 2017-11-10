@@ -337,9 +337,9 @@ def gather_data_wagman():
                     if len(sp) == 5:
                         values['temperatures']['heatsink_nc'] = int(sp[0])
                         values['temperatures']['heatsink_ep'] = int(sp[1])
-                        values['temperatures']['battery'] = int(sp[2])
-                        values['temperatures']['brainplate'] = int(sp[3])
-                        values['temperatures']['powersupply'] = int(sp[4])
+                        values['temperatures']['battery'] = int(sp[4])
+                        values['temperatures']['brainplate'] = int(sp[2])
+                        values['temperatures']['powersupply'] = int(sp[3])
                 elif 'date' in subject:
                     struct_time = time.strptime(args, '%Y %m %d %H %M %S')
                     values['date'] = format_datetime(calendar.timegm(struct_time))
