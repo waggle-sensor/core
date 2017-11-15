@@ -51,6 +51,10 @@ ln -sf ${current_dir}/etc/dot_screen /root/.screen
 # status-script
 ln -sf ${current_dir}/scripts/status-service /usr/bin/waggle-status
 
+# recover script and switch-mode script
+ln -sf ${current_dir}/scripts/recover-other-media /usr/bin/waggle-recover-other-media
+ln -sf ${current_dir}/scripts/switch-to-operation-mode /usr/bin/waggle-switch-to-operation-mode
+
 set +x
 
 echo "run: udevadm control --reload-rules"

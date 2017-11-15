@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Stop platform services
+systemctl stop $(systemctl show -p Wants waggle-platform.target | cut -d '=' -f 2)
+if [ $? -ne 0 ]; then
+    echo "Failed to stop waggle-platform services"
+    exit 1
+fi
+
+# Force recovery
+touch /root/do_recovery
+
+# Unlock filesystem
+waggle-fs-unlock
+if [ $? -ne 0 ]; then
+    echo "Could not unlock the system"
+    exit 1
+fi
+
+# Recover the other media
+systemctl isolate waggle-core.target
+# Check when waggle-init.service starts
+while [ -f /root/init_finished ]; do
+    sleep 1
+done
+
+while [ ! -f /root/init_finished ]; do
+    sleep 1
+done
+
+# Lock filesystem
+waggle-fs-lock
+if [ $? -ne 0 ]; then
+    echo "Lock filesystem failed, PLEASE LOCK THE SYSTEM MANUALLY"
+    exit 1
+else
+    switch-to-operation-mode
+fi
