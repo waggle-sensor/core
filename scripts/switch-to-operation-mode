@@ -30,4 +30,9 @@ if [ -w / ]; then
     fi
 fi
 
+echo "wellness" > /etc/waggle/hbmode
+systemctl restart waggle-heartbeat.service
+systemctl set-default waggle-platform.target
+systemctl isolate waggle-platform.target
+
 echo "Done"
