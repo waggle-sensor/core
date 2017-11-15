@@ -20,10 +20,12 @@ fi
 # Recover the other media
 systemctl isolate waggle-core.target
 # Check when waggle-init.service starts
+echo "Wait waggle-init.service to start..."
 while [ -f /root/init_finished ]; do
     sleep 1
 done
 
+echo "wait waggle-init.service to end..."
 while [ ! -f /root/init_finished ]; do
     sleep 1
 done
@@ -34,5 +36,5 @@ if [ $? -ne 0 ]; then
     echo "Lock filesystem failed, PLEASE LOCK THE SYSTEM MANUALLY"
     exit 1
 else
-    switch-to-operation-mode
+    waggle-switch-to-operation-mode
 fi
