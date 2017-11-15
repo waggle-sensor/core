@@ -9,12 +9,13 @@ if [ "$number_of_partitions" != "3" ]; then
     exit 1
 fi
 
+if [ -w / ]; then
+    waggle-fs-unlock
+fi
+
 password=$(readlink /etc/shadow | grep aot | wc -l)
 if [ "$password" != "1" ]; then
-    echo -e "Password unlocked. Locking..."
-    if [ -w / ]; then
-        waggle-fs-unlock
-    fi
+    echo "Password unlocked. Locking..."
     waggle-pw-lock
     if [ $? -ne 0 ]; then
         echo "Lock password failed, PLEASE LOCK THE PASSWORD MANUALLY"
@@ -22,17 +23,15 @@ if [ "$password" != "1" ]; then
     fi
 fi
 
-if [ -w / ]; then
-    waggle-fs-lock
-    if [ $? -ne 0 ]; then
-        echo "Lock filesystem failed, PLEASE LOCK THE SYSTEM MANUALLY"
-        exit 1
-    fi
-fi
-
 echo "wellness" > /etc/waggle/hbmode
 systemctl restart waggle-heartbeat.service
 systemctl set-default waggle-platform.target
+waggle-fs-lock
+if [ $? -ne 0 ]; then
+    echo "Lock filesystem failed, PLEASE LOCK THE SYSTEM MANUALLY"
+    systemctl set-default waggle-core.target
+    exit 1
+fi
 systemctl isolate waggle-platform.target
 
 echo "Done"
