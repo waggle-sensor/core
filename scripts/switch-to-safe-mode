@@ -8,3 +8,4 @@ if [ $? -eq 0 ]; then
     exit 0
 else
     echo "Switching to safe mode...Failed"
+fi
