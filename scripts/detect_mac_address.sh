@@ -34,6 +34,7 @@ export MAC_STRING=$mac_string
 
 echo "MAC_ADDRESS=${MAC_ADDRESS}"
 echo "MAC_STRING=${MAC_STRING}"
+echo "NODE_ID=${MAC_STRING}"
 
 # temporary patch until we know where any other instances of NODE_ID may exist
 export NODE_ID=$MAC_STRING

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+echo "Switching to safe mode..."
+
+# Stop platform services
+systemctl stop $(systemctl show -p Wants waggle-platform.target | cut -d '=' -f 2)
+if [ $? -ne 0 ]; then
+    echo "Failed to stop waggle-platform services"
+    exit 1
+fi
+
+# hbmode to always
+if [ ! -w / ] ; then
+    waggle-fs-unlock
+    echo "always" > /etc/waggle/hbmode
+    waggle-fs-lock
+else
+    echo "always" > /etc/waggle/hbmode
+fi
+systemctl restart waggle-heartbeat.service
+
+echo "Done"

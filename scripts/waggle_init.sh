@@ -376,7 +376,7 @@ recover_other_disk() {
     cd /media/data
   fi
 
-  rsync --archive --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude=lost+found --exclude='/var/*' --exclude='/srv/*' --exclude='/home/*' --exclude='/root/*' --exclude='aafirstboot' --exclude='.first_boot' --exclude='/usr/lib/waggle/core/scripts/aafirstboot'
+  rsync --archive --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude=lost+found --exclude='/var/*' --exclude='/srv/*' --exclude='aafirstboot' --exclude='.first_boot' --exclude='/usr/lib/waggle/core/scripts/aafirstboot' --exclude='/root/do_recovery'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
@@ -390,13 +390,6 @@ recover_other_disk() {
     # exit code 1 means: Some files differ
     exit $exitcode
   fi
- 
-  rsync -L --archive --one-file-system ./home ${OTHER_DISK_P3} --exclude=lost+found 
-  exitcode=$?
-  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
-    # exit code 1 means: Some files differ
-    exit $exitcode
-  fi
 
   rsync -L --archive --one-file-system ./srv ${OTHER_DISK_P3} --exclude=lost+found
   exitcode=$?
@@ -404,38 +397,22 @@ recover_other_disk() {
     # exit code 1 means: Some files differ
     exit $exitcode
   fi
-  
-  rsync -L --archive --one-file-system ./root ${OTHER_DISK_P3} --exclude=lost+found --exclude='/root/do_recovery'
-  exitcode=$?
-  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
-    # exit code 1 means: Some files differ
-    exit $exitcode
-  fi
 
-  rsync -L --archive --one-file-system ./etc/waggle ${OTHER_DISK_P3} --exclude=lost+found
-  exitcode=$?
-  if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
-    # exit code 1 means: Some files differ
-    exit $exitcode
-  fi
+  cd ${OTHER_DISK_P2}
 
-  cd ${OTHER_DISK_P2} 
+  # Put do_recovery in the other media if requested
+  recover_me=$(cat /root/do_recovery)
+  if [ "$recover_me" == "recover me" ] ; then
+    touch ${OTHER_DISK_P2}/root/do_recovery
+  fi
   
-  mkdir -p wagglerw
-  rm -rf home
+  mkdir -p wagglerw/waggle
   rm -rf var 
   rm -rf srv
-  rm -rf root
-
-  rm -rf etc/waggle
   
-  ln -s /wagglerw/home home
   ln -s /wagglerw/var var
   ln -s /wagglerw/srv srv
-  ln -s /wagglerw/root root
-
-  ln -s /wagglerw/waggle etc/waggle
-
+  
   cd ${OTHER_DISK_P3}
   
   mkdir -p var/log/rabbitmq
@@ -475,18 +452,13 @@ recover_other_disk() {
   echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID} /media/boot vfat  defaults,rw,owner,flush,umask=000 0 0" >> ${OTHER_DISK_P2}/etc/fstab
   echo "tmpfs   /tmp  tmpfs nodev,nosuid,mode=1777      0 0" >> ${OTHER_DISK_P2}/etc/fstab
 
-  # restart waggle-platform target
-  local restart_waggle_platform=0
-  if [ -e /root/do_recovery ]; then
-    run_mode=$(cat /root/do_recovery)
-    if [ "${run_mode}" == "manual" ]; then
-      echo "restarting waggle-platform systemd target"
-      systemctl isolate waggle-platform &  # this blocks on waggle-init, so run in the background
-    fi
-  fi
-
   echo "removing do_recovery special files..."
-  rm -f /root/do_recovery 
+
+  rm -f /root/do_recovery
+  if [ -e /root/do_recovery ] ; then
+    echo "Could not remove /root/do_recovery."
+    exit 1
+  fi
 
   echo "setting ${OTHER_DISK_DEVICE_TYPE} card's hostname..."
   echo "${MAC_STRING}_${OTHER_DISK_DEVICE_TYPE}" > ${OTHER_DISK_P2}/etc/hostname
@@ -627,8 +599,7 @@ declare -r DEBUG_HOST=""
 # This file can be used by other services to avoid reboots
 # until the waggle-init service has finished performing
 # critical activities.
-declare -r INIT_FINISHED_FILE="/root/init_finished"
-declare -r INIT_FINISHED_FILE_WAGGLE="/home/waggle/init_finished"
+declare -r INIT_FINISHED_FILE="/tmp/init_finished"
 
 declare -r OTHER_DISK_P1=/media/otherp1
 declare -r OTHER_DISK_P2=/media/otherp2
@@ -640,8 +611,9 @@ fi
 
 echo "starting waggle_init.sh"
 
+
+
 rm -f ${INIT_FINISHED_FILE}
-rm -f ${INIT_FINISHED_FILE_WAGGLE}
 
 # set the following global variables:
 #   ODROID_MODEL, MAC_ADDRESS, MAC_STRING, CURRENT_DISK_DEVICE, CURRENT_DISK_DEVICE_NAME,
@@ -660,18 +632,16 @@ if [ -w / ] ; then setup_system ; fi
 # assert that all dependencies for recovery have been met
 assert_dependencies
 
-
-
 # check various conditions to determine if recovery of the other boot disk is needed
 RECOVERY_NEEDED=0
 if [ ${FORCE_RECOVERY} -eq 1 ]; then
-  echo "Recovery requested. Re-running as a service in recovery mode..."
-  echo "*** Use 'journalctl -fu waggle-init' to follow the output. ***"
-  echo "manual" > /root/do_recovery
-  systemctl isolate waggle-core
-
-  exit 0
-else
+  if [ -w / ] ; then
+    touch /root/do_recovery
+  else
+    waggle-fs-unlock
+    touch /root/do_recovery
+  fi
+else 
   detect_recovery
   RECOVERY_NEEDED=$?
 fi
@@ -688,8 +658,15 @@ if [[ ${FORCE_RECOVERY} -eq 1 || ${RECOVERY_NEEDED} -eq 1 ]] ; then
     src=/dev/loop0
   fi
   # unmount everything all mountpoints we depend on
-  prepare_mountpoints
-  recover_other_disk ${src}
+  if [ ! -w / ] ; then
+    waggle-fs-unlock
+    prepare_mountpoints
+    recover_other_disk ${src}
+    waggle-fs-lock
+  else
+    prepare_mountpoints
+    recover_other_disk ${src}
+  fi
 
   if [ "${SOURCE}x" != "x" ] ; then
     echo "Unmounting the image ${SOURCE}..."
@@ -717,7 +694,6 @@ echo "* restart networking.service"
 systemctl restart networking.service
 
 touch ${INIT_FINISHED_FILE}
-touch ${INIT_FINISHED_FILE_WAGGLE}
 
 if [ ${DEBUG} -eq 1 ] ; then
   curl --retry 10 "${DEBUG_HOST}/failovertest?status=done" || true

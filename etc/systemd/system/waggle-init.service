@@ -2,6 +2,9 @@
 Description=Initializes Waggle system.
 After=waggle-core.target
 
+# Start the service only when recover requested
+ConditionPathExists=/root/do_recovery
+
 [Service]
 Type=oneshot
 WorkingDirectory=/usr/lib/waggle/core/
