@@ -25,7 +25,6 @@ if [ "$password" != "1" ]; then
     exit 1
 fi
 
-waggle-fs-unlock
 systemctl set-default waggle-platform.target
 waggle-fs-lock
 if [ $? -ne 0 ]; then

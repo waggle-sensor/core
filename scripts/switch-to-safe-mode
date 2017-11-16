@@ -2,10 +2,13 @@
 
 echo "Switching to safe mode..."
 
+set -e
+
 waggle-fs-unlock
 if [ $? -eq 0 ]; then
     echo "Switching to safe mode...Done"
     exit 0
 else
     echo "Switching to safe mode...Failed"
+    exit 1
 fi
