@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Stop platform services
+systemctl stop -- $(systemctl show -p Wants waggle-platform.target | cut -d '=' -f 2)
+if [ $? -ne 0 ]; then
+    echo "Failed to stop waggle-platform services. Unlocking failed"
+    exit 1
+fi
+
 mount -o remount,rw /
 if [ $? -ne 0 ] ; then
   echo "Mounting / as rw failed"
@@ -15,5 +22,8 @@ if [ $(cat /etc/fstab | grep ' \/ ' | grep 'rw,' | wc -l) -eq 0 ] ; then
   echo "waggle-fs-unlock failed"
   exit 1
 fi
+
+systemctl default waggle-core.target
+rm -f /root/fs_locked
 
 echo "waggle-fs-unlock is done"

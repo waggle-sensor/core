@@ -1,6 +1,6 @@
 #!/bin/bash
 
-node_config_dir=/etc/waggle
+node_config_dir=/wagglerw/waggle
 mkdir -p ${node_config_dir}
 
 device=$(cat /proc/cpuinfo | grep Hardware | cut -d ":" -f 2)

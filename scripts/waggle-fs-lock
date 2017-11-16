@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ ! -w / ] ; then
+    echo "FS is already locked"
+    exit 0
+fi
+
 mount -o remount,rw /
 if [ $? -ne 0 ] ; then
   echo "Mounting / as rw failed"
@@ -16,9 +21,12 @@ if [ $(cat /etc/fstab | grep ' \/ ' | grep 'ro,' | wc -l) -eq 0 ] ; then
   exit 1
 fi
 
+touch /root/fs_locked
+
 mount -o remount,ro /
 if [ $? -ne 0 ] ; then
   echo "Mounting / as ro failed"
+  rm -f /root/fs_locked
   exit 1
 fi
 
