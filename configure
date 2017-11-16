@@ -56,6 +56,10 @@ ln -sf ${current_dir}/scripts/recover-other-media /usr/bin/waggle-recover-other-
 ln -sf ${current_dir}/scripts/switch-to-operation-mode /usr/bin/waggle-switch-to-operation-mode
 ln -sf ${current_dir}/scripts/switch-to-safe-mode /usr/bin/waggle-switch-to-safe-mode
 
+# Copy waggle-fs-lock and unlock scripts
+ln -sf ${current_dir}/scripts/waggle-fs-lock /usr/bin/waggle-fs-lock
+ln -sf ${current_dir}/scripts/waggle-fs-unlock /usr/bin/waggle-fs-unlock
+
 set +x
 
 echo "run: udevadm control --reload-rules"
@@ -65,10 +69,6 @@ echo "done"
 
 # may want to move into a different script?
 cp ${current_dir}/scripts/rabbitmqadmin /usr/bin
-
-# Copy waggle-fs-lock and unlock scripts
-cp ${current_dir}/scripts/waggle-fs-lock /usr/bin
-cp ${current_dir}/scripts/waggle-fs-unlock /usr/bin
 
 # install the particular version of pywaggle that we tested against
 pywaggle_tag="v0.21.4"
