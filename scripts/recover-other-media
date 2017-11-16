@@ -7,9 +7,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Force recovery
-touch /root/do_recovery
-
 # Unlock filesystem
 waggle-fs-unlock
 if [ $? -ne 0 ]; then
@@ -17,24 +14,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Force recovery
+touch /root/do_recovery
+
 # Recover the other media
 systemctl isolate waggle-core.target
 # Check when waggle-init.service starts
 echo "Wait waggle-init.service to start..."
-while [ -f /root/init_finished ]; do
+while [ -f /tmp/init_finished ]; do
     sleep 1
 done
 
 echo "wait waggle-init.service to end..."
-while [ ! -f /root/init_finished ]; do
+while [ ! -f /tmp/init_finished ]; do
     sleep 1
 done
 
-# Lock filesystem
-waggle-fs-lock
-if [ $? -ne 0 ]; then
-    echo "Lock filesystem failed, PLEASE LOCK THE SYSTEM MANUALLY"
-    exit 1
-else
-    waggle-switch-to-operation-mode
-fi
+# Switch back to operation mode
+waggle-switch-to-operation-mode

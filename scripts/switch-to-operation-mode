@@ -9,7 +9,7 @@ if [ "$number_of_partitions" != "3" ]; then
     exit 1
 fi
 
-if [ -w / ]; then
+if [ ! -w / ]; then
     waggle-fs-unlock
 fi
 
