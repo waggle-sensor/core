@@ -22,6 +22,7 @@ if [ $(cat /etc/fstab | grep ' \/ ' | grep 'ro,' | wc -l) -eq 0 ] ; then
 fi
 
 touch /root/fs_locked
+sync
 
 mount -o remount,ro /
 if [ $? -ne 0 ] ; then

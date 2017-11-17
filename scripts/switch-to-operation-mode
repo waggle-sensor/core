@@ -2,8 +2,6 @@
 
 echo "Switching to operation mode..."
 
-sync
-
 current_device=$(mount | grep "on / " | cut -f 1 -d ' ' | grep -o "mmcblk[0-1]")
 number_of_partitions=$(ls /sys/block/$current_device/ | grep -o "${current_device}p[0-3]" | wc -l)
 if [ "$number_of_partitions" != "3" ]; then
@@ -16,6 +14,7 @@ if [ ! -w / ]; then
 fi
 
 echo "wellness" > /etc/waggle/hbmode
+sync
 systemctl restart waggle-heartbeat.service
 
 waggle-pw-lock
