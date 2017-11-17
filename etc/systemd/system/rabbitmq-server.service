@@ -3,6 +3,8 @@ Description=RabbitMQ broker
 After=network.target epmd@0.0.0.0.socket waggle-platform.target
 Wants=network.target epmd@0.0.0.0.socket
 
+ConditionPathExists=/root/fs_locked
+
 [Service]
 Type=notify
 User=rabbitmq
