@@ -2,7 +2,7 @@
 
 echo "Switching to safe mode..."
 
-set -e
+sync
 
 waggle-fs-unlock
 if [ $? -eq 0 ]; then
