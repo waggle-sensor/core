@@ -127,53 +127,18 @@ setup_system() {
 }
 
 setup_rabbitmq() {
-  ODROID_MODEL=$(/usr/lib/waggle/core/scripts/detect_odroid_model.sh)
-  NODE_ID=$(/usr/lib/waggle/core/scripts/detect_mac_address.sh | grep MAC_STRING | cut -d '=' -f 2)
-
-  echo "Checking Rabbitmq Config files..."
-  cd /etc/rabbitmq
-  check_result=$(./check_config_files)
-
-  echo -n "Checking rabbitmq.config..."
-  if [ "$ODROID_MODEL" == "C" ] ; then
-    syntax_check_result=$(echo "$check_result" | grep rabbitmq.config | cut -d ' ' -f 2)
-    node_id_check_result=$(grep "reply_to, <<\"$NODE_ID\">>" "/etc/rabbitmq/rabbitmq.config" | wc -l)
-    if [ "$syntax_check_result" == "ok" ] && [ "$node_id_check_result" == "1" ]; then
-      echo "correct"
-    else
-      echo "wrong - recoverying rabbitmq.config..."
-      cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
-      sed -i -e "s/%NODE_ID%/$NODE_ID/" /etc/rabbitmq/rabbitmq.config
-    fi
+  echo "Setting Rabbitmq Config files..."
+  if [ "${ODROID_MODEL}x" == "Cx" ] ; then
+    cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
+    sed -i -e "s/%NODE_ID%/$NODE_ID/" /etc/rabbitmq/rabbitmq.config
   else
-    syntax_check_result=$(echo "$check_result" | grep rabbitmq.config | cut -d ' ' -f 2)
-    if [ "$syntax_check_result" == "ok" ]; then
-      echo "correct"
-    else
-      echo "wrong - recoverying rabbitmq.config..."
-      cp /usr/lib/waggle/edge_processor/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
-    fi
+    cp /usr/lib/waggle/edge_processor/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
   fi
 
-  echo -n "Checking enabled_plugins..."
-  if [ "$ODROID_MODEL" == "C" ] ; then
-    syntax_check_result=$(echo "$check_result" | grep enabled_plugins | cut -d ' ' -f 2)
-    enabled_plugins_check_result=$(grep "rabbitmq_management,rabbitmq_shovel,rabbitmq_shovel_management" "/etc/rabbitmq/enabled_plugins" | wc -l)
-    if [ "$syntax_check_result" == "ok" ] && [ "$enabled_plugins_check_result" == "1" ]; then
-      echo "correct"
-    else
-      echo "wrong - recovering enabled_plugins..."
-      cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/enabled_plugins /etc/rabbitmq
-    fi
+  if [ "${ODROID_MODEL}x" == "Cx" ] ; then
+    cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/enabled_plugins /etc/rabbitmq
   else
-    syntax_check_result=$(echo "$check_result" | grep enabled_plugins | cut -d ' ' -f 2)
-    enabled_plugins_check_result=$(grep "rabbitmq_management" "/etc/rabbitmq/enabled_plugins" | wc -l)
-    if [ "$syntax_check_result" == "ok" ] && [ "$enabled_plugins_check_result" == "1" ]; then
-      echo "correct"
-    else
-      echo "wrong - recovering enabled_plugins..."
-      cp /usr/lib/waggle/edge_processor/etc/rabbitmq/enabled_plugins /etc/rabbitmq
-    fi
+    cp /usr/lib/waggle/edge_processor/etc/rabbitmq/enabled_plugins /etc/rabbitmq
   fi
 }
 
