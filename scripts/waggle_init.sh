@@ -144,6 +144,7 @@ setup_rabbitmq() {
       echo "wrong - recoverying rabbitmq.config..."
       cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
       sed -i -e "s/%NODE_ID%/$NODE_ID/" /etc/rabbitmq/rabbitmq.config
+    fi
   else
     syntax_check_result=$(echo "$check_result" | grep rabbitmq.config | cut -d ' ' -f 2)
     if [ "$syntax_check_result" == "ok" ]; then
