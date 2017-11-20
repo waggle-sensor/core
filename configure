@@ -42,6 +42,7 @@ rsync -a etc/systemd/ /etc/systemd
 systemctl enable waggle-heartbeat.service
 systemctl enable waggle-init.service
 systemctl enable rabbitmq-server.service
+systemctl enable waggle-configure-rabbitmq.service
 systemctl set-default waggle-core.target
 
 # setup .screen

@@ -126,6 +126,56 @@ setup_system() {
   /usr/lib/waggle/core/scripts/create_node_id.sh
 }
 
+setup_rabbitmq() {
+  ODROID_MODEL=$(/usr/lib/waggle/core/scripts/detect_odroid_model.sh)
+  NODE_ID=$(/usr/lib/waggle/core/scripts/detect_mac_address.sh | grep MAC_STRING | cut -d '=' -f 2)
+
+  echo "Checking Rabbitmq Config files..."
+  cd /etc/rabbitmq
+  check_result=$(./check_config_files)
+
+  echo -n "Checking rabbitmq.config..."
+  if [ "$ODROID_MODEL" == "C" ] ; then
+    syntax_check_result=$(echo "$check_result" | grep rabbitmq.config | cut -d ' ' -f 2)
+    node_id_check_result=$(grep "reply_to, <<\"$NODE_ID\">>" "/etc/rabbitmq/rabbitmq.config" | wc -l)
+    if [ "$syntax_check_result" == "ok" ] && [ "$node_id_check_result" == "1" ]; then
+      echo "correct"
+    else
+      echo "wrong - recoverying rabbitmq.config..."
+      cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
+      sed -i -e "s/%NODE_ID%/$NODE_ID/" /etc/rabbitmq/rabbitmq.config
+  else
+    syntax_check_result=$(echo "$check_result" | grep rabbitmq.config | cut -d ' ' -f 2)
+    if [ "$syntax_check_result" == "ok" ]; then
+      echo "correct"
+    else
+      echo "wrong - recoverying rabbitmq.config..."
+      cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
+    fi
+  fi
+
+  echo -n "Checking enabled_plugins..."
+  if [ "$ODROID_MODEL" == "C" ] ; then
+    syntax_check_result=$(echo "$check_result" | grep enabled_plugins | cut -d ' ' -f 2)
+    enabled_plugins_check_result=$(grep "rabbitmq_management,rabbitmq_shovel,rabbitmq_shovel_management" "/etc/rabbitmq/enabled_plugins" | wc -l)
+    if [ "$syntax_check_result" == "ok" ] && [ "$enabled_plugins_check_result" == "1" ]; then
+      echo "correct"
+    else
+      echo "wrong - recovering enabled_plugins..."
+      cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/enabled_plugins /etc/rabbitmq
+    fi
+  else
+    syntax_check_result=$(echo "$check_result" | grep enabled_plugins | cut -d ' ' -f 2)
+    enabled_plugins_check_result=$(grep "rabbitmq_management" "/etc/rabbitmq/enabled_plugins" | wc -l)
+    if [ "$syntax_check_result" == "ok" ] && [ "$enabled_plugins_check_result" == "1" ]; then
+      echo "correct"
+    else
+      echo "wrong - recovering enabled_plugins..."
+      cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/enabled_plugins /etc/rabbitmq
+    fi
+  fi
+}
+
 assert_dependencies() {
   #
   # Test if other memory card actually exists
@@ -627,7 +677,10 @@ start_singleton $FORCE_EXECUTION
 
 
 # set the hostname and do some other things
-if [ -w / ] ; then setup_system ; fi
+setup_system
+
+# validate rabbitmq configure scripts
+setup_rabbitmq
 
 # assert that all dependencies for recovery have been met
 assert_dependencies
@@ -635,12 +688,7 @@ assert_dependencies
 # check various conditions to determine if recovery of the other boot disk is needed
 RECOVERY_NEEDED=0
 if [ ${FORCE_RECOVERY} -eq 1 ]; then
-  if [ -w / ] ; then
-    touch /root/do_recovery
-  else
-    waggle-fs-unlock
-    touch /root/do_recovery
-  fi
+  touch /root/do_recovery
 else 
   detect_recovery
   RECOVERY_NEEDED=$?
@@ -658,15 +706,8 @@ if [[ ${FORCE_RECOVERY} -eq 1 || ${RECOVERY_NEEDED} -eq 1 ]] ; then
     src=/dev/loop0
   fi
   # unmount everything all mountpoints we depend on
-  if [ ! -w / ] ; then
-    waggle-fs-unlock
-    prepare_mountpoints
-    recover_other_disk ${src}
-    waggle-fs-lock
-  else
-    prepare_mountpoints
-    recover_other_disk ${src}
-  fi
+  prepare_mountpoints
+  recover_other_disk ${src}
 
   if [ "${SOURCE}x" != "x" ] ; then
     echo "Unmounting the image ${SOURCE}..."
