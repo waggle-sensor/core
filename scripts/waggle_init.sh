@@ -150,7 +150,7 @@ setup_rabbitmq() {
       echo "correct"
     else
       echo "wrong - recoverying rabbitmq.config..."
-      cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
+      cp /usr/lib/waggle/edge_processor/etc/rabbitmq/rabbitmq.config /etc/rabbitmq
     fi
   fi
 
@@ -171,7 +171,7 @@ setup_rabbitmq() {
       echo "correct"
     else
       echo "wrong - recovering enabled_plugins..."
-      cp /usr/lib/waggle/nodecontroller/etc/rabbitmq/enabled_plugins /etc/rabbitmq
+      cp /usr/lib/waggle/edge_processor/etc/rabbitmq/enabled_plugins /etc/rabbitmq
     fi
   fi
 }
