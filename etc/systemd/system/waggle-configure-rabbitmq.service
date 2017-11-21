@@ -7,7 +7,7 @@ ConditionPathExists=/root/fs_locked
 
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/waggle/nodecontroller/scripts/configure-rabbitmq.sh
+ExecStart=/usr/lib/waggle/core/scripts/configure-rabbitmq.sh
 
 [Install]
 WantedBy=rabbitmq-server.service
