@@ -422,7 +422,7 @@ recover_other_disk() {
     touch ${OTHER_DISK_P2}/root/do_recovery
   fi
   
-  mkdir -p wagglerw/waggle
+  mkdir wagglerw
   rm -rf var 
   rm -rf srv
   
@@ -430,7 +430,8 @@ recover_other_disk() {
   ln -s /wagglerw/srv srv
   
   cd ${OTHER_DISK_P3}
-  
+
+  mkdir waggle
   mkdir -p var/log/rabbitmq
   mkdir -p var/log/journal
   
