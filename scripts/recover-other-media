@@ -21,12 +21,12 @@ touch /root/do_recovery
 systemctl isolate waggle-core.target
 # Check when waggle-init.service starts
 echo "Wait waggle-init.service to start..."
-while [ -f /tmp/init_finished ]; do
+while [ -f /etc/waggle/init_finished ]; do
     sleep 1
 done
 
 echo "wait waggle-init.service to end..."
-while [ ! -f /tmp/init_finished ]; do
+while [ ! -f /etc/waggle/init_finished ]; do
     sleep 1
 done
 
