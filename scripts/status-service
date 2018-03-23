@@ -316,7 +316,7 @@ def gather_data_wagman():
         items = out.split('\n')
         for item in items:
             try:
-                subject, args = item.split(' ', 1)
+                subject, args = item.strip().split(' ', 1)
                 if 'nc' in subject and 'heartbeat' in args:
                     values['heartbeats']['nc'] = True
                 elif 'gn' in subject and 'heartbeat' in args:
@@ -364,7 +364,7 @@ def gather_data_wagman():
                         values['enabled']['cs'] = int(sp[2])
                         values['enabled']['port4'] = int(sp[3])
                         values['enabled']['port5'] = int(sp[4])
-                elif 'media':
+                elif 'media' in subject:
                     sp = args.split(' ')
                     if len(sp) == 2:
                         values['media']['nc'] = sp[0]
