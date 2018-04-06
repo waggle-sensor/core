@@ -292,6 +292,21 @@ wagman = {
     'rtc': None,
 }
 
+network = {
+    'broadband': {
+        'rx': None,
+        'tx': None,
+    },
+    'lan': {
+        'rx': None,
+        'tx': None,
+    },
+    'usb': {
+        'rx': None,
+        'tx': None,
+    },
+}
+
 
 def call(command):
     assert isinstance(command, str)
@@ -788,6 +803,26 @@ def gather_data_common():
     return values
 
 
+def gather_data_net():
+    values = network.copy()
+    net_devices = [
+        ('ppp0', 'broadband'),
+        ('eth0', 'lan'),
+        ('enx.', 'usb'),
+    ]
+    for pattern, alias in net_devices:
+        try:
+            found_devices = sorted([dev for dev in os.listdir('/sys/class/net') if re.match(pattern, dev)])
+            first_found_device = found_devices[0]
+            rx = int(read_file(os.path.join('/sys/class/net', first_found_device, 'statistics/rx_bytes')))
+            tx = int(read_file(os.path.join('/sys/class/net', first_found_device, 'statistics/tx_bytes')))
+            values[alias]['rx'] = rx
+            values[alias]['tx'] = tx
+        except Exception:
+            pass
+    return values
+
+
 def report_to_beehive(dict_data):
     data = encode(dict_data)
 
@@ -901,6 +936,8 @@ if __name__ == '__main__':
 
         report['nc'] = result_common
         report['nc'].update(result_nc)
+
+        report['net'] = gather_data_net()
 
     else:
         result_common = gather_data_common()
