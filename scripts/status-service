@@ -315,6 +315,11 @@ def call(command):
     return cmd.returncode, output
 
 
+def read_file(filename):
+    with open(filename) as f:
+        return f.read()
+
+
 def get_node_id():
     rc, out = call("ip link | grep -e '00:1e:06' | awk '{print $2}' | sed 's/://g' | tr '[:lower:]' '[:upper:]'")
     if rc == 0:
@@ -812,8 +817,8 @@ def gather_data_net():
     ]
     for pattern, alias in net_devices:
         try:
-            found_devices = sorted([dev for dev in os.listdir('/sys/class/net') if re.match(pattern, dev)])
-            first_found_device = found_devices[0]
+            devices_found = sorted([dev for dev in os.listdir('/sys/class/net') if re.match(pattern, dev)])
+            first_found_device = devices_found[0]
             rx = int(read_file(os.path.join('/sys/class/net', first_found_device, 'statistics/rx_bytes')))
             tx = int(read_file(os.path.join('/sys/class/net', first_found_device, 'statistics/tx_bytes')))
             values[alias]['rx'] = rx
