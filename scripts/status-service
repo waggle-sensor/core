@@ -163,6 +163,11 @@ edgeprocessor = {
             'mi': None,
             'p': None,
         },
+        'plugin_manager': {
+            'mj': None,
+            'mi': None,
+            'p': None,
+        },
     },
     'devices': {
         'camera_top': None,
@@ -507,6 +512,11 @@ def gather_data_ep():
                 values['ver'][repo]['mj'] = sp[0]
                 values['ver'][repo]['mi'] = sp[1]
                 values['ver'][repo]['p'] = sp[2]
+
+    # TODO: This needs to be updated!
+    values['ver']['plugin_manager']['mj'] = '0'
+    values['ver']['plugin_manager']['mi'] = '0'
+    values['ver']['plugin_manager']['p'] = '0'
 
     # Devices
     devices = [
