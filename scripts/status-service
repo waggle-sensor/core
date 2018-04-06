@@ -790,7 +790,6 @@ def gather_data_common():
 
 def report_to_beehive(dict_data):
     data = encode(dict_data)
-    print(data)
 
     if not isinstance(data, bytes):
         print('Data is not bytes. Cannot send to Beehive')
