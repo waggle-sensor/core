@@ -503,6 +503,7 @@ def gather_data_ep():
     repos = [
         'core',
         'edge_processor',
+        'plugin_manager',
     ]
     for repo in repos:
         rc, out = call("cd /usr/lib/waggle/%s; git describe --tag | sed 's/v//g'" % (repo,))
@@ -514,9 +515,9 @@ def gather_data_ep():
                 values['ver'][repo]['p'] = sp[2]
 
     # TODO: This needs to be updated!
-    values['ver']['plugin_manager']['mj'] = '0'
-    values['ver']['plugin_manager']['mi'] = '0'
-    values['ver']['plugin_manager']['p'] = '0'
+    # values['ver']['plugin_manager']['mj'] = '0'
+    # values['ver']['plugin_manager']['mi'] = '0'
+    # values['ver']['plugin_manager']['p'] = '0'
 
     # Devices
     devices = [
