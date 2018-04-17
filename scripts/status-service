@@ -151,7 +151,7 @@ nodecontroller = {
 }
 
 edgeprocessor = {
-    'pw_lock': None,
+    'lock_pw': None,
     'ver': {
         'core': {
             'mj': None,
