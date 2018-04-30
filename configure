@@ -72,6 +72,6 @@ echo "done"
 cp ${current_dir}/scripts/rabbitmqadmin /usr/bin
 
 # install the particular version of pywaggle that we tested against
-pywaggle_tag="0.23.8"
+pywaggle_tag="0.23.10"
 pip install git+https://github.com/waggle-sensor/pywaggle@${pywaggle_tag}
 pip3 install git+https://github.com/waggle-sensor/pywaggle@${pywaggle_tag}
