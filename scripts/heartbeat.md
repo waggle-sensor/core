@@ -1,3 +1,7 @@
+<!--
+waggle_topic=IGNORE
+-->
+
 # Operation
 
 The heartbeat service continuously turns on and off a General Purpose IO (GPIO) pin on the C1+ or XU4 board.
