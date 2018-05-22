@@ -45,6 +45,13 @@ systemctl enable rabbitmq-server.service
 systemctl enable waggle-configure-rabbitmq.service
 systemctl set-default waggle-core.target
 
+# Set permissions
+cd ${current_dir}/scripts
+chmod 700 *
+cd ${current_dir}/setup-disk
+chmod 700 *
+cd ${current_dir}
+
 # setup .screen
 ln -sf ${current_dir}/etc/dot_screen /home/waggle/.screen
 ln -sf ${current_dir}/etc/dot_screen /root/.screen
