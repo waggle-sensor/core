@@ -1,6 +1,6 @@
 <!--
-waggle_topic=Waggle/Node/Node Controller,Waggle Core Software
-waggle_topic=Waggle/Node/Edge Processor,Waggle Core Software
+waggle_topic=/node_controller,Waggle Core Software
+waggle_topic=/edge_processor,Waggle Core Software
 -->
 
 # core
