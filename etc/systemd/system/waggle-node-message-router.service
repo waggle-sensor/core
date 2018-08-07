@@ -2,7 +2,6 @@
 Description=Routes messages to subsystems within a node.
 
 [Service]
-EnvironmentFile=/wagglerw/waggle/env
 ExecStart=/wagglerw/message-pipeline/bin/node-message-router messages
 Restart=always
 RestartSec=60

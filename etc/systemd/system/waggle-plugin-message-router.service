@@ -2,7 +2,6 @@
 Description=Routes messages to plugins within a subsystem.
 
 [Service]
-EnvironmentFile=/wagglerw/waggle/env
 ExecStart=/wagglerw/message-pipeline/bin/plugin-message-router messages
 Restart=always
 RestartSec=60
