@@ -1,0 +1,37 @@
+#!/bin/sh
+
+main() {
+  init_plugin_services
+
+  while true; do
+    update_plugin_services
+    sleep 60
+  done
+}
+
+init_plugin_services() {
+  echo "Init runtime service files."
+  mkdir -p /wagglerw/systemd/system
+  cp /wagglerw/systemd/system/waggle-plugin-* /run/systemd/system
+  systemctl daemon-reload
+}
+
+update_plugin_services() {
+  services=$(ls /run/systemd/system | grep waggle-plugin)
+  target=$(systemctl get-default)
+
+  case $target in
+    waggle-core.target)
+      echo "Ensuring plugins are stopped."
+      systemctl stop $services
+      ;;
+    waggle-platform.target)
+      echo "Ensuring plugins are started."
+      systemctl start $services
+      ;;
+    *)
+      echo "Warning: Unknown target $target. Will not perform any actions."
+  esac
+}
+
+main
