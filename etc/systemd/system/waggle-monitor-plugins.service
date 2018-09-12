@@ -2,7 +2,7 @@
 Description=Monitors plugins.
 
 [Service]
-ExecStart=/wagglerw/message-pipeline/bin/monitor-plugins
+ExecStart=/usr/lib/waggle/core/bin/monitor-plugins
 Restart=always
 RestartSec=60
 
