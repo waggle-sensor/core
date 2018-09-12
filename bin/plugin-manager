@@ -11,7 +11,7 @@ service_template = (
     'Description=Validates messages going to beehive.\n\n'
     '[Service]\n'
     'Environment=WAGGLE_PLUGIN_RABBITMQ_URL={rabbitmq_url}\n'
-    'ExecStartPre=/usr/lib/waggle/nodecontroller/bin/set-plugin-credentials\n'
+    'ExecStartPre=/usr/lib/waggle/core/bin/set-plugin-credentials\n'
     'ExecStart={executable}\n'
     'Restart=always\n'
     'RestartSec=60\n'
