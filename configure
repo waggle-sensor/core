@@ -39,10 +39,15 @@ rm -f /etc/init.d/rabbitmq-server
 
 # copy systemd scripts
 rsync -a etc/systemd/ /etc/systemd
-systemctl enable waggle-heartbeat.service
-systemctl enable waggle-init.service
-systemctl enable rabbitmq-server.service
-systemctl enable waggle-configure-rabbitmq.service
+
+systemctl enable \
+  waggle-heartbeat.service \
+  waggle-init.service \
+  rabbitmq-server.service \
+  waggle-configure-rabbitmq.service \
+  waggle-plugin-message-router.service \
+  waggle-monitor-plugins.service
+
 systemctl set-default waggle-core.target
 
 # setup .screen
