@@ -1,0 +1,10 @@
+[Unit]
+Description=Monitors plugins.
+
+[Service]
+ExecStart=/wagglerw/message-pipeline/bin/monitor-plugins
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=waggle-core.target

@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+import argparse
+import configparser
+import os
+import ssl
+import subprocess
+
+
+service_template = (
+    '[Unit]\n'
+    'Description=Validates messages going to beehive.\n\n'
+    '[Service]\n'
+    'Environment=WAGGLE_PLUGIN_RABBITMQ_URL={rabbitmq_url}\n'
+    'ExecStartPre=/wagglerw/message-pipeline/bin/set-plugin-credentials\n'
+    'ExecStart={executable}\n'
+    'Restart=always\n'
+    'RestartSec=60\n'
+)
+
+
+username_template = 'plugin-{plugin_id}-{plugin_maj}.{plugin_min}-{plugin_instance}'
+
+
+def read_file(filename):
+    with open(filename) as file:
+        return file.read()
+
+
+def read_plugin_info(plugin_dir):
+    config = configparser.ConfigParser()
+    config.read(os.path.join(plugin_dir, 'plugin.ver'))
+    config.read(os.path.join(plugin_dir, 'plugin.instance'))
+    section = config['PARAMETERS']
+
+    return {
+        'plugin_id': int(section['plugin_id']),
+        'plugin_name': section['plugin_name'],
+        'description': section['description'],
+        'reference': section['reference'],
+        'plugin_maj': int(section['plugin_maj']),
+        'plugin_min': int(section['plugin_min']),
+        'plugin_build': int(section['plugin_build']),
+        'plugin_instance': int(section['plugin_instance']),
+    }
+
+
+def get_service_filename_for_plugin(name):
+    return 'waggle-{}.service'.format(name)
+
+
+# TODO Refactor to give single context object.
+def add_service(name, rabbitmq_url, executable, plugin_info):
+    formatted = service_template.format(
+        rabbitmq_url=rabbitmq_url,
+        executable=executable,
+        **plugin_info).strip()
+
+    service_filename = get_service_filename_for_plugin(name)
+
+    targets = [
+        os.path.join('/wagglerw/systemd/system', service_filename),
+        os.path.join('/run/systemd/system', service_filename),
+    ]
+
+    for target in targets:
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+
+        with open(target, 'w') as file:
+            file.writelines(formatted)
+
+        os.chmod(target, 0o700)
+
+    subprocess.check_output(['systemctl', 'daemon-reload'])
+    # subprocess.check_output(['systemctl', 'restart', service_filename])
+
+
+def remove_service(name):
+    service_filename = get_service_filename_for_plugin(name)
+    try:
+        subprocess.check_output(['systemctl', 'stop', os.path.basename(service_filename)])
+        os.remove(service_filename)
+    except OSError:
+        pass
+
+
+def get_username_for_plugin_config(plugin_info):
+    return username_template.format(**plugin_info)
+
+
+def generate_random_password():
+    return ssl.RAND_bytes(20).hex()
+
+
+def enable_plugin(plugin_dir):
+    plugin_info = read_plugin_info(plugin_dir)
+    username = get_username_for_plugin_config(plugin_info)
+    password = generate_random_password()
+
+    rabbitmq_url = 'amqp://{}:{}@localhost'.format(username, password)
+
+    executable = os.path.abspath(os.path.join(plugin_dir, 'plugin_bin/plugin'))
+    # add_user(username, password)
+    add_service(username, rabbitmq_url, executable, plugin_info)
+    print('enabled', username)
+
+
+def disable_plugin(plugin_dir):
+    plugin_info = read_plugin_info(plugin_dir)
+    username = get_username_for_plugin_config(plugin_info)
+    # remove_user(username)
+    remove_service(username)
+    print('disabled', username)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(dest='subcommand')
+
+    parser_enable = subparsers.add_parser('start')
+    parser_enable.add_argument('plugin_dirs', nargs='+')
+
+    parser_disable = subparsers.add_parser('stop')
+    parser_disable.add_argument('plugin_dirs', nargs='+')
+
+    args = parser.parse_args()
+
+    if args.subcommand == 'start':
+        for plugin in args.plugin_dirs:
+            enable_plugin(plugin)
+    elif args.subcommand == 'stop':
+        for plugin in args.plugin_dirs:
+            disable_plugin(plugin)
+    else:
+        parser.print_help()
+
+
+if __name__ == '__main__':
+    main()

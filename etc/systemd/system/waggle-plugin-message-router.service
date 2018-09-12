@@ -2,7 +2,7 @@
 Description=Routes messages to plugins within a subsystem.
 
 [Service]
-ExecStart=/wagglerw/message-pipeline/bin/plugin-message-router messages
+ExecStart=/wagglerw/message-pipeline/bin/plugin-message-router
 Restart=always
 RestartSec=60
 
