@@ -380,7 +380,7 @@ def gather_data_nc():
         values['beehive']['ping'] = 'N'
 
     # Beehive sshd
-    rc, out = call('ssh -i /usr/lib/waggle/SSL/node/key.pem -x -o "PasswordAuthentication no" -o "StrictHostKeyChecking no" root@beehive -p 20022 date > /dev/null 2>&1')
+    rc, out = call('ssh -i /etc/waggle/key.pem -x -o "PasswordAuthentication no" -o "StrictHostKeyChecking no" root@beehive -p 20022 date > /dev/null 2>&1')
     if rc == 0:
         values['beehive']['sshd'] = 'Y'
     else:
@@ -853,9 +853,9 @@ def report_to_beehive(dict_data):
         return
 
     ssl_options = {
-        'ca_certs': '/usr/lib/waggle/SSL/waggleca/cacert.pem',
-        'certfile': '/usr/lib/waggle/SSL/node/cert.pem',
-        'keyfile': '/usr/lib/waggle/SSL/node/key.pem',
+        'ca_certs': '/etc/waggle/cacert.pem',
+        'certfile': '/etc/waggle/cert.pem',
+        'keyfile': '/etc/waggle/key.pem',
         'cert_reqs': ssl.CERT_REQUIRED,
     }
 
