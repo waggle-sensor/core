@@ -1,11 +1,10 @@
 #!/bin/bash
 set -e
 
-
 # Documentation
 #
 # ODROID-XU3/XU4
-# Pin 4 = Export No 173 
+# Pin 4 = Export No 173
 # (GND = PIN2 or PIN30)
 # Source: http://odroid.com/dokuwiki/doku.php?id=en:xu4_hardware
 # Source: http://dn.odroid.com/5422/ODROID-XU3/Schematics/XU4_HIGHTOPSILK.png
@@ -25,8 +24,8 @@ OWN_PID=$$
 
 if [ -e ${pidfile} ] ; then
   oldpid=`cat ${pidfile}`
-  
-  # delete process only if PID is different from ours (happens easily)  
+
+  # delete process only if PID is different from ours (happens easily)
   if [ "${oldpid}_" != "${OWN_PID}_"  ] ; then
     echo "Kill other heartbeat process"
     set +e
@@ -71,7 +70,7 @@ touch ${ALIVE_FILE}
 if [ ${ODROID_MODEL}x == "x" ] ; then
   echo "Device not recognized"
   exit 1
-fi 
+fi
 
 
 if [ ${ODROID_MODEL}x == "XU3x" ] ; then
@@ -100,16 +99,16 @@ set +x
 
 echo "Starting heartbeat (mode '${MODE}')..."
 
-
-while [ 1 ] ; do 
+while true; do
   PIN_HIGH=1
   if [[ ${ODROID_MODEL}x == "Cx" && ${MODE} == "wellness"  && -e /etc/waggle/init_finished ]] ; then
     CURRENT_TIME=`date +%s`
     ALIVE_TIME=`stat -c %Y ${ALIVE_FILE}`
     ALIVE_DURATION=`python -c "print(${CURRENT_TIME} - ${ALIVE_TIME})"`
-    if [ ${ALIVE_DURATION} -gt 60 ]; then
-      # Skip this heartbeat
+    if [ ${ALIVE_DURATION} -gt 86400 ]; then
       PIN_HIGH=0
+    else
+      echo "$ALIVE_FILE older than 1 day. Skipping heartbeat."
     fi
   fi
   echo ${PIN_HIGH} > /sys/class/gpio/gpio${GPIO_EXPORT}/value
@@ -117,5 +116,3 @@ while [ 1 ] ; do
   echo 0  > /sys/class/gpio/gpio${GPIO_EXPORT}/value
   sleep ${TIME_LOW}
 done
-
-
