@@ -46,12 +46,12 @@ def get_plugin_config(plugin_dir):
     section = config['plugin']
 
     return {
-        'plugin_id': section.getint('id'),
-        'plugin_name': section.get('name'),
+        'id': section.getint('id'),
+        'name': section.get('name'),
         'description': section.get('description'),
         'reference': section.get('reference'),
-        'plugin_version': parse_version_string(section.get('version')),
-        'plugin_instance': section.getint('instance'),
+        'version': parse_version_string(section.get('version')),
+        'instance': section.getint('instance'),
     }
 
     # subprocess.check_output(['systemctl', 'daemon-reload'])
