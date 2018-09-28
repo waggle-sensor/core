@@ -16,8 +16,8 @@ Description=Validates messages going to beehive.
 
 [Service]
 WorkingDirectory={plugin_dir}
-ExecStartPre=/usr/lib/waggle/core/bin/set-plugin-credentials
 ExecStart={executable}
+ExecStartPre=/usr/lib/waggle/core/bin/set-plugin-credentials
 Restart=always
 RestartSec=60
 ''')
