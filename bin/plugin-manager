@@ -3,22 +3,31 @@ import argparse
 import configparser
 import os
 import ssl
-import subprocess
+# import subprocess
 
 
-service_template = (
-    '[Unit]\n'
-    'Description=Validates messages going to beehive.\n\n'
-    '[Service]\n'
-    'Environment=WAGGLE_PLUGIN_RABBITMQ_URL={rabbitmq_url}\n'
-    'ExecStartPre=/usr/lib/waggle/core/bin/set-plugin-credentials\n'
-    'ExecStart={executable}\n'
-    'Restart=always\n'
-    'RestartSec=60\n'
-)
+def heredoc(s):
+    return s.strip('\n') + '\n'
 
 
-username_template = 'plugin-{plugin_id}-{plugin_maj}.{plugin_min}-{plugin_instance}'
+service_template = heredoc('''
+[Unit]
+Description=Validates messages going to beehive.
+
+[Service]
+ExecStartPre=/usr/lib/waggle/core/bin/set-plugin-credentials {executable}
+ExecStart={executable}
+Restart=always
+RestartSec=60
+''')
+
+service_filename = 'waggle-{id}-{version}-{instance}.service'
+
+credentials_template = heredoc('''
+[credentials]
+username=plugin-{plugin_id}-{plugin_maj}.{plugin_min}-{plugin_instance}
+password={password}
+''')
 
 
 def read_file(filename):
@@ -26,65 +35,37 @@ def read_file(filename):
         return file.read()
 
 
-def read_plugin_info(plugin_dir):
+def parse_version_string(s):
+    return tuple(int(x) for x in s.split('.', 2))
+
+
+def get_plugin_config(plugin_dir):
     config = configparser.ConfigParser()
     config.read(os.path.join(plugin_dir, 'plugin.ver'))
     config.read(os.path.join(plugin_dir, 'plugin.instance'))
-    section = config['PARAMETERS']
+    section = config['plugin']
 
     return {
-        'plugin_id': int(section['plugin_id']),
-        'plugin_name': section['plugin_name'],
-        'description': section['description'],
-        'reference': section['reference'],
-        'plugin_maj': int(section['plugin_maj']),
-        'plugin_min': int(section['plugin_min']),
-        'plugin_build': int(section['plugin_build']),
-        'plugin_instance': int(section['plugin_instance']),
+        'plugin_id': section.getint('id'),
+        'plugin_name': section.get('name'),
+        'description': section.get('description'),
+        'reference': section.get('reference'),
+        'plugin_version': parse_version_string(section.get('version')),
+        'plugin_instance': section.getint('instance'),
     }
 
-
-def get_service_filename_for_plugin(name):
-    return 'waggle-{}.service'.format(name)
-
-
-# TODO Refactor to give single context object.
-def add_service(name, rabbitmq_url, executable, plugin_info):
-    formatted = service_template.format(
-        rabbitmq_url=rabbitmq_url,
-        executable=executable,
-        **plugin_info).strip()
-
-    service_filename = get_service_filename_for_plugin(name)
-
-    targets = [
-        os.path.join('/wagglerw/systemd/system', service_filename),
-        os.path.join('/run/systemd/system', service_filename),
-    ]
-
-    for target in targets:
-        os.makedirs(os.path.dirname(target), exist_ok=True)
-
-        with open(target, 'w') as file:
-            file.writelines(formatted)
-
-        os.chmod(target, 0o700)
-
-    subprocess.check_output(['systemctl', 'daemon-reload'])
+    # subprocess.check_output(['systemctl', 'daemon-reload'])
     # subprocess.check_output(['systemctl', 'restart', service_filename])
 
 
-def remove_service(name):
-    service_filename = get_service_filename_for_plugin(name)
-    try:
-        subprocess.check_output(['systemctl', 'stop', os.path.basename(service_filename)])
-        os.remove(service_filename)
-    except OSError:
-        pass
-
-
-def get_username_for_plugin_config(plugin_info):
-    return username_template.format(**plugin_info)
+# def remove_service(plugin_config):
+#     filename = service_filename.format(**plugin_config)
+#
+#     try:
+#         subprocess.check_output(['systemctl', 'stop', os.path.basename(filename)])
+#         os.remove(filename)
+#     except OSError:
+#         pass
 
 
 def generate_random_password():
@@ -92,24 +73,42 @@ def generate_random_password():
 
 
 def enable_plugin(plugin_dir):
-    plugin_info = read_plugin_info(plugin_dir)
-    username = get_username_for_plugin_config(plugin_info)
-    password = generate_random_password()
+    plugin_config = get_plugin_config(plugin_dir)
+    plugin_config['password'] = generate_random_password()
+    plugin_config['executable'] = os.path.abspath(os.path.join(plugin_dir, 'plugin_bin/plugin'))
 
-    rabbitmq_url = 'amqp://{}:{}@localhost'.format(username, password)
+    # write service file
+    template = service_template.format(**plugin_config)
+    filename = service_filename.format(**plugin_config)
 
-    executable = os.path.abspath(os.path.join(plugin_dir, 'plugin_bin/plugin'))
-    # add_user(username, password)
-    add_service(username, rabbitmq_url, executable, plugin_info)
-    print('enabled', username)
+    targets = [
+        os.path.join('/wagglerw/systemd/system', filename),
+        os.path.join('/run/systemd/system', filename),
+    ]
+
+    for target in targets:
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+
+        with open(target, 'w') as file:
+            file.write(template)
+
+        os.chmod(target, 0o700)
+
+    # write credentials file
+    template = credentials_template.format(**plugin_config)
+    filename = os.path.join(plugin_dir, 'plugin.credentials')
+
+    with open(filename, 'w') as file:
+        file.write(template)
+
+    print('enabled', plugin_dir)
 
 
-def disable_plugin(plugin_dir):
-    plugin_info = read_plugin_info(plugin_dir)
-    username = get_username_for_plugin_config(plugin_info)
-    # remove_user(username)
-    remove_service(username)
-    print('disabled', username)
+# def disable_plugin(plugin_dir):
+#     plugin_info = read_plugin_info(plugin_dir)
+#     username = get_username_for_plugin_config(plugin_info)
+#     remove_service(username)
+#     print('disabled', username)
 
 
 def main():
