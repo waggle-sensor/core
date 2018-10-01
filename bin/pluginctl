@@ -22,7 +22,7 @@ Restart=always
 RestartSec=60
 ''')
 
-service_filename = 'waggle-{id}-{version}-{instance}.service'
+service_filename = 'waggle-plugin-{id}-{version}-{instance}.service'
 
 credentials_template = heredoc('''
 [credentials]
