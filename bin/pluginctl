@@ -12,10 +12,10 @@ def heredoc(s):
 
 service_template = heredoc('''
 [Unit]
-Description=Validates messages going to beehive.
+Description={description}
 
 [Service]
-WorkingDirectory={plugin_dir}
+WorkingDirectory={directory}
 ExecStart={executable}
 ExecStartPre=/usr/lib/waggle/core/bin/set-plugin-credentials
 Restart=always
@@ -75,7 +75,7 @@ def generate_random_password():
 
 def enable_plugin(plugin_dir):
     plugin_config = get_plugin_config(plugin_dir)
-    plugin_config['plugin_dir'] = os.path.abspath(plugin_dir)
+    plugin_config['directory'] = os.path.abspath(plugin_dir)
     plugin_config['password'] = generate_random_password()
     plugin_config['executable'] = os.path.abspath(os.path.join(plugin_dir, 'plugin_bin/plugin'))
 
