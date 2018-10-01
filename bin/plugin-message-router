@@ -2,8 +2,6 @@
 import argparse
 import logging
 import pika
-import re
-import subprocess
 import waggle.protocol
 
 logger = logging.getLogger('plugin-router')
@@ -11,11 +9,14 @@ logger = logging.getLogger('plugin-router')
 route_format = 'to-plugin-{plugin_id}-{plugin_major_version}.{plugin_minor_version}-{plugin_instance}'
 
 
+def read_file(path):
+    with open(path) as file:
+        return file.read()
+
+
 def get_node_id():
     logging.info('Autodetecting node ID.')
-    output = subprocess.check_output(['ip', 'link']).decode()
-    mac = re.search(r'00:1e:\S+', output).group()
-    return mac.replace(':', '').rjust(16, '0')
+    return read_file('/etc/waggle/node_id').strip()
 
 
 def unpack_messages_and_datagrams(body):
