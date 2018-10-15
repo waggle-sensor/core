@@ -105,7 +105,7 @@ while true; do
     CURRENT_TIME=`date +%s`
     ALIVE_TIME=`stat -c %Y ${ALIVE_FILE}`
     ALIVE_DURATION=`python -c "print(${CURRENT_TIME} - ${ALIVE_TIME})"`
-    if [ ${ALIVE_DURATION} -gt 86400 ]; then
+    if [ ${ALIVE_DURATION} -lt 86400 ]; then
       PIN_HIGH=0
     else
       echo "$ALIVE_FILE older than 1 day. Skipping heartbeat."
