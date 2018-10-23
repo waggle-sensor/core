@@ -116,14 +116,16 @@ should_heartbeat() {
   return 0
 }
 
+# TODO detect new or old mechanism
 while true; do
   if should_heartbeat; then
     echo "heartbeat"
+    # old hb mechanism
     echo 1 > /sys/class/gpio/gpio${GPIO_EXPORT}/value
     sleep 1
     echo 0  > /sys/class/gpio/gpio${GPIO_EXPORT}/value
     sleep 1
-
+    # new hb mechanism.
     echo hello > $SERIAL
   else
     echo "skipping heartbeat"
