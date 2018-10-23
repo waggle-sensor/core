@@ -18,7 +18,6 @@ set -e
 TIME_LOW=1.0
 TIME_HIGH=1.0
 
-
 pidfile='/var/run/waggle/heartbeat.pid'
 OWN_PID=$$
 
@@ -76,14 +75,17 @@ fi
 if [ ${ODROID_MODEL}x == "XU3x" ] ; then
   GPIO_EXPORT=173
   PIN=4
+  SERIAL=/dev/ttySAC0
+  stty -F $SERIAL 115200
 elif [ ${ODROID_MODEL}x == "Cx" ] ; then
   GPIO_EXPORT=74
   PIN=3
+  SERIAL=/dev/ttyS2
+  stty -F $SERIAL 115200
 else
   echo "Device ${ODROID_MODEL} not recognized"
   exit 1
 fi
-
 
 echo "Activating GPIO pin ${PIN} with export number ${GPIO_EXPORT}."
 
@@ -99,19 +101,30 @@ set +x
 
 echo "Starting heartbeat (mode '${MODE}')..."
 
-while true; do
-  PIN_HIGH=1
+should_heartbeat() {
   if [[ ${ODROID_MODEL}x == "Cx" && ${MODE} == "wellness"  && -e /etc/waggle/init_finished ]] ; then
     CURRENT_TIME=`date +%s`
     ALIVE_TIME=`stat -c %Y ${ALIVE_FILE}`
     ALIVE_DURATION=`python -c "print(${CURRENT_TIME} - ${ALIVE_TIME})"`
+
     if [ ${ALIVE_DURATION} -gt 86400 ]; then
-      PIN_HIGH=0
-      echo "$ALIVE_FILE older than 1 day. Skipping heartbeat."
+      echo "$ALIVE_FILE older than 1 day."
+      return 1
     fi
   fi
-  echo ${PIN_HIGH} > /sys/class/gpio/gpio${GPIO_EXPORT}/value
-  sleep ${TIME_HIGH}
-  echo 0  > /sys/class/gpio/gpio${GPIO_EXPORT}/value
-  sleep ${TIME_LOW}
+
+  return 0
+}
+
+while true; do
+  if should_heartbeat; then
+    echo "heartbeat"
+    echo 1 > /sys/class/gpio/gpio${GPIO_EXPORT}/value
+    sleep 1
+    echo 0  > /sys/class/gpio/gpio${GPIO_EXPORT}/value
+    sleep 1
+  else
+    echo "skipping heartbeat"
+    sleep 1
+  fi
 done
