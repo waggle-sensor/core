@@ -123,6 +123,8 @@ while true; do
     sleep 1
     echo 0  > /sys/class/gpio/gpio${GPIO_EXPORT}/value
     sleep 1
+
+    echo hello > $SERIAL
   else
     echo "skipping heartbeat"
     sleep 1
