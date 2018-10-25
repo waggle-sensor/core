@@ -46,10 +46,16 @@ set -e
 #sed -i -e 's:exec /bin/login -f root:exec /bin/login:' /bin/auto-root-login
 
 cp ${script_dir}/aafirstboot /
+cp ${script_dir}/screenrc /root/.screenrc
 
 # Change net raise timeout to something more reasonable
-sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/networking.service
-sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/ifup@.service
+if [ -f /lib/systemd/system/networking.service ]; then
+    sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/networking.service
+fi
+if [ -f /lib/systemd/system/ifup@.service ]; then
+    sed -i -e 's:^TimeoutStartSec=5min:TimeoutStartSec=5sec:' /lib/systemd/system/ifup@.service
+fi
+
 systemctl disable apt-daily.timer
 systemctl disable time-sync.target
 systemctl disable systemd-timesyncd
@@ -148,6 +154,7 @@ chmod 700 /home/waggle/.ssh/
 touch /home/waggle/.ssh/authorized_keys
 chmod 600 /home/waggle/.ssh/authorized_keys
 chown waggle:waggle /home/waggle/.ssh/ /home/waggle/.ssh/authorized_keys
+chmod 777 /var/run/screen/
 
 # Setup a proper terminal emulator
 fgrep 'export TERM' /home/waggle/.bashrc && true
