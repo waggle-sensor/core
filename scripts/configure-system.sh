@@ -23,6 +23,7 @@ apt-key update
 apt-get update
 apt-get autoclean
 apt-get autoremove -y
+apt-get install -y rsync
 
 # disable software update and new release checks and messages
 # (don't want the node connecting to anything other than the beehive server)
