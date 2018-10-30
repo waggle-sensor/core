@@ -51,8 +51,9 @@ systemctl enable \
 systemctl set-default waggle-core.target
 
 # setup .screen
-ln -sf ${current_dir}/etc/dot_screen /home/waggle/.screen
-ln -sf ${current_dir}/etc/dot_screen /root/.screen
+ln -sf ${current_dir}/etc/dot_screen /home/waggle/.screenrc
+ln -sf ${current_dir}/etc/dot_screen /root/.screenrc
+
 
 # status-script
 ln -sf ${current_dir}/scripts/status-service /usr/bin/waggle-status
