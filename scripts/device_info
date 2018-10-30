@@ -1,0 +1,26 @@
+#!/bin/bash
+echo "--------------------"
+echo "Device Model:"$(cat /proc/cpuinfo | grep Hardware | cut -d ":" -f 2)
+echo "System Information:"
+hostnamectl
+echo "Up since: "$(uptime -s)
+echo "Date: "$(date)
+echo ""
+echo "Heartbeat Mode: "$(cat /etc/waggle/hbmode)
+echo ""
+if [ -w "/" ] ; then 
+echo 'FS State: !!! Root is RW !!!'
+else 
+echo 'FS State: ***  Root is RO ***'
+fi
+echo ""
+echo "Target State:"
+systemctl | grep waggle | grep target | tr -s " " | cut -d " " -f 1
+echo ""
+echo "Network Interfaces:"
+ifconfig | grep "Link encap:\|inet addr:" | grep -v "Local Loopback" | grep -v "127.0.0.1"
+echo ""
+echo "Disk Usage Information:"
+df -h | grep mmcblk
+echo ""
+echo "--------------------"
