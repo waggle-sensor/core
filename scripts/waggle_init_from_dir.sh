@@ -479,6 +479,10 @@ recover_other_disk() {
   mkdir -p var/log/rabbitmq
   mkdir -p var/log/journal
 
+  # Ubuntu 18.04 requires /var/run and /run to be the same
+  rm -rf var/run
+  ln -s /run var/run
+
   chown rabbitmq:rabbitmq var/log/rabbitmq/
 
   cd /
