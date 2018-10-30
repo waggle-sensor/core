@@ -61,6 +61,7 @@ ln -sf ${current_dir}/scripts/status-service /usr/bin/waggle-status
 ln -sf ${current_dir}/scripts/recover-other-media /usr/bin/waggle-recover-other-media
 ln -sf ${current_dir}/scripts/switch-to-operation-mode /usr/bin/waggle-switch-to-operation-mode
 ln -sf ${current_dir}/scripts/switch-to-safe-mode /usr/bin/waggle-switch-to-safe-mode
+ln -sf ${current_dir}/scripts/device-info /usr/bin/device-info
 
 # Copy waggle-fs-lock and unlock scripts
 ln -sf ${current_dir}/scripts/waggle-fs-lock /usr/bin/waggle-fs-lock
