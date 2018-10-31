@@ -78,6 +78,10 @@ ln -sf ${current_dir}/scripts/switch-to-safe-mode /usr/bin/unsafe-operation-mode
 ln -sf ${current_dir}/scripts/waggle-fs-lock /usr/bin/waggle-fs-lock
 ln -sf ${current_dir}/scripts/waggle-fs-unlock /usr/bin/waggle-fs-unlock
 
+
+ln -sf ${current_dir}/scripts/console-lock /usr/bin/console-lock
+ln -sf ${current_dir}/scripts/console-unlock /usr/bin/console-unlock
+
 set +x
 
 echo "run: udevadm control --reload-rules"
