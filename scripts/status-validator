@@ -158,11 +158,20 @@ valid_wagman = {
 }
 
 
+def ensure_bool(x):
+    if isinstance(x, bool):
+        return x
+    return 'Y' in x or '1' in x
+
+
 def validate_equal(value, value2):
     if isinstance(value, str):
         value = value.capitalize()
     if isinstance(value2, str):
         value2 = value2.capitalize()
+    if isinstance(value, bool) or isinstance(value2, bool):
+        value = ensure_bool(value)
+        value2 = ensure_bool(value2)
     return value == value2
 
 
