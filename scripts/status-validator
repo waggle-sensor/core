@@ -25,11 +25,11 @@ valid_common = {
             'name': {'contain': 'mmcblk'},
         },
     },
-    'ram' : {
-        'total': {'range': (0.0, 16.0)},                      # GB
-        'free': {'range': (0.0, 16.0)},                       # GB
-    },
-    'cpu_temp': {'range': (0, 100)},                        # C
+    # 'ram' : {
+    #     'total': {'range': (0.0, 16.0)},                      # GB
+    #     'free': {'range': (0.0, 16.0)},                       # GB
+    # },
+    # 'cpu_temp': {'range': (0, 100)},                        # C
     'fs_lock': {'equal': True},
     'pw_lock': {'equal': True},
     'current_time': {'after': '2017/01/01 00:00:00'},
@@ -101,15 +101,15 @@ valid_edgeprocessor = {
 }
 
 valid_wagman = {
-    'ver': {
-        'hw': {'equal': '3.1'},
-        'kernel': {'equal': '1.0.4'},
-        'time': {'equal': '2017/03/18 03:18:50'},
-        'git': {'equal': 'a1e3'},
-    },
-    'boot_flag': {'contain': 'EXTRF'},
-    'boot_count': {'range': (0, 65536)},
-    'bootloader_nc_flag': {'equal': 'off'},
+    # 'ver': {
+    #     'hw': {'equal': '3.1'},
+    #     'kernel': {'equal': '1.0.4'},
+    #     'time': {'equal': '2017/03/18 03:18:50'},
+    #     'git': {'equal': 'a1e3'},
+    # },
+    # 'boot_flag': {'contain': 'EXTRF'},
+    # 'boot_count': {'range': (0, 65536)},
+    # 'bootloader_nc_flag': {'equal': 'off'},
     'heartbeats': {
         'nc': {'equal': True},
         'ep': {'equal': True},
