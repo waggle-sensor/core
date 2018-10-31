@@ -47,7 +47,6 @@ set -e
 #sed -i -e 's:exec /bin/login -f root:exec /bin/login:' /bin/auto-root-login
 
 cp ${script_dir}/aafirstboot /
-cp ${script_dir}/screenrc /root/.screenrc
 
 # Change net raise timeout to something more reasonable
 if [ -f /lib/systemd/system/networking.service ]; then
