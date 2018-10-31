@@ -71,6 +71,7 @@ if [ ${ODROID_MODEL}x == "x" ] ; then
   exit 1
 fi
 
+# TODO detect which model wagman we have
 
 if [ ${ODROID_MODEL}x == "XU3x" ] ; then
   GPIO_EXPORT=173

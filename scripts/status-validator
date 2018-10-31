@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-
 import sys
-import time
+import datetime
 import json
 import argparse
 
@@ -158,12 +157,14 @@ valid_wagman = {
     },
 }
 
+
 def validate_equal(value, value2):
     if isinstance(value, str):
         value = value.capitalize()
     if isinstance(value2, str):
         value2 = value2.capitalize()
-    return True if value == value2 else False
+    return value == value2
+
 
 '''
     value contains word
@@ -202,24 +203,42 @@ def validate_contain(value, word):
     else:
         return False
 
+
 def validate_length(value, length):
     if value is None:
         return False
-    return True if len(value) == length else False
+    return len(value) == length
+
 
 def validate_range(value, valid_range):
     assert isinstance(valid_range, tuple)
+
     if value is None:
         return False
-    return True if value >= valid_range[0] and value <= valid_range[1] else False
+
+    if isinstance(value, str):
+        value = float(value)
+
+    return valid_range[0] <= value <= valid_range[1]
 
 
-datetime_format = '%Y/%m/%d %H:%M:%S'
+def parse_datetime_string(s):
+    # try datetime format
+    try:
+        return datetime.datetime.strptime(s, '%Y/%m/%d %H:%M:%S')
+    except (ValueError, TypeError):
+        pass
+
+    # try epoch timestamp
+    return datetime.datetime.fromtimestamp(float(s))
+
+
 def validate_after(value, base):
     if value is None:
         return False
-    datetime_value = time.strptime(value, datetime_format)
-    datetime_base = time.strptime(base, datetime_format)
+
+    datetime_value = parse_datetime_string(value)
+    datetime_base = parse_datetime_string(base)
     return datetime_value > datetime_base
 
 
@@ -234,7 +253,7 @@ def validate(data, criteria, prefix='', print_only_when_failed=False):
             ret = False
             for subject in criterion:
                 expected_value = criterion[subject]
-                
+
                 if 'equal' in subject:
                     ret = validate_equal(data_value, expected_value)
                 elif 'contain' in subject:
@@ -245,6 +264,8 @@ def validate(data, criteria, prefix='', print_only_when_failed=False):
                     ret = validate_range(data_value, expected_value)
                 elif 'after' in subject:
                     ret = validate_after(data_value, expected_value)
+                else:
+                    raise ValueError('Unknown validation {}.'.format(subject))
 
             if ret:
                 if not print_only_when_failed:
@@ -253,27 +274,44 @@ def validate(data, criteria, prefix='', print_only_when_failed=False):
                 print(' [ %s ] %s%s = %s' % ('FAIL', prefix, key, data_value))
 
 
+def get_first_key_value(keys, data):
+    for key in keys:
+        try:
+            return data[key]
+        except KeyError:
+            pass
+
+    return None
+
+
 def main(data, failed_only, output_type):
     result = {}
-    if 'nodecontroller' in data:
+
+    nc_data = get_first_key_value(['nodecontroller', 'nc'], data)
+
+    if nc_data is not None:
         nc_criteria = valid_common.copy()
         nc_criteria.update(valid_nodecontroller)
-        nc_output = validate(data['nodecontroller'], nc_criteria, prefix='nodecontroller/', print_only_when_failed=failed_only)
+        nc_output = validate(nc_data, nc_criteria, prefix='nodecontroller/', print_only_when_failed=failed_only)
         result['nodecontroller'] = nc_criteria
     else:
         print(' [ INFO ] Nodecontroller results not exist in data')
 
-    if 'edgeprocessor' in data:
+    ep_data = get_first_key_value(['edgeprocessor', 'ep'], data)
+
+    if ep_data is not None:
         ep_criteria = valid_common.copy()
         ep_criteria.update(valid_edgeprocessor)
-        ep_output = validate(data['edgeprocessor'], ep_criteria, prefix='edgeprocessor/', print_only_when_failed=failed_only)
+        ep_output = validate(ep_data, ep_criteria, prefix='edgeprocessor/', print_only_when_failed=failed_only)
         result['edgeprocessor'] = ep_output
     else:
         print(' [ INFO ] Edgeprocessor results not exist in data')
 
-    if 'wagman' in data:
+    wagman_data = get_first_key_value(['wagman', 'wm'], data)
+
+    if wagman_data is not None:
         wagman_criteria = valid_wagman.copy()
-        wagman_output = validate(data['wagman'], wagman_criteria, prefix='wagman/', print_only_when_failed=failed_only)
+        wagman_output = validate(wagman_data, wagman_criteria, prefix='wagman/', print_only_when_failed=failed_only)
         result['wagman'] = wagman_output
     else:
         print(' [ INFO ] Wagman results not exist in data')
