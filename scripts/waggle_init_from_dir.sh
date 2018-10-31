@@ -479,6 +479,16 @@ recover_other_disk() {
   mkdir -p var/log/rabbitmq
   mkdir -p var/log/journal
 
+
+  mkdir -p etc
+  touch etc/adjtime
+
+  # /etc/adjtime needs to be writable for adjusting hwclock --> hwclock -w
+  cd ${OTHER_DISK_P2}
+  rm -rf etc/adjtime
+  ln -s /wagglerw/etc/adjtime etc/adjtime
+  cd ${OTHER_DISK_P3}
+
   # Ubuntu 18.04 requires /var/run and /run to be the same
   rm -rf var/run
   ln -s /run var/run
