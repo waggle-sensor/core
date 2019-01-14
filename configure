@@ -62,7 +62,6 @@ ln -sf ${current_dir}/scripts/status-service /usr/bin/waggle-status
 ln -sf ${current_dir}/scripts/recover-other-media /usr/bin/waggle-recover-other-media
 ln -sf ${current_dir}/scripts/device-info /usr/bin/device-info
 
-
 ln -sf ${current_dir}/scripts/waggle-safe-mode /usr/bin/waggle-safe-mode
 ln -sf ${current_dir}/scripts/waggle-unsafe-mode /usr/bin/waggle-unsafe-mode
 
