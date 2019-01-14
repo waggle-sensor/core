@@ -2,28 +2,49 @@
 
 # Stop platform services
 systemctl stop -- $(systemctl show -p Wants waggle-platform.target | cut -d '=' -f 2)
+
 if [ $? -ne 0 ]; then
     echo "Failed to stop waggle-platform services. Unlocking failed"
     exit 1
 fi
 
 mount -o remount,rw /
+
 if [ $? -ne 0 ] ; then
   echo "Mounting / as rw failed"
   exit 1
 fi
 
-content=`cat /etc/fstab | grep ' \/ ' | sed 's/ro,/rw,/'`
-#uuid=$(blkid -o export /dev/mmcblk0p2 | grep "^UUID" |  cut -f2 -d '=')
-sed -i '/ \/ /d' /etc/fstab
-sed -i "1i ${content}" /etc/fstab
+# checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems. 
+if [ ! -f /etc/fstab_ro ]; then
+    # old system, so making changes in fstab
+    content=`cat /etc/fstab | grep ' \/ ' | sed 's/ro,/rw,/'`
+    sed -i '/ \/ /d' /etc/fstab
+    sed -i "1i ${content}" /etc/fstab
 
-if [ $(cat /etc/fstab | grep ' \/ ' | grep 'rw,' | wc -l) -eq 0 ] ; then
-  echo "waggle-fs-unlock failed"
-  exit 1
+    if [ $(cat /etc/fstab | grep ' \/ ' | grep 'rw,' | wc -l) -eq 0 ] ; then
+        echo "waggle-fs-unlock failed"
+        exit 1
+    fi
+else
+   # new system, so just moving files appropriately
+   # checking if the files are indeed correct
+   if [ $(diff /etc/fstab_ro /etc/fstab_rw  | head -1) == '1c1' ]; then 
+        cp /etc/fstab_rw /tmp/fstab_rw_tmp
+        mv /tmp/fstab_rw_tmp /etc/fstab
+   else 
+       echo "/etc/fstab_* files are inconsistent. Please check files."
+       exit 1
+   fi
 fi
 
 systemctl set-default waggle-core.target
 rm -f /root/fs_locked
+
+#checking if the root fs is writable for root. 
+if [ ! -w / ] ; then
+    echo "waggle-fs-unlock failed"
+    exit 0
+fi
 
 echo "waggle-fs-unlock is done"
