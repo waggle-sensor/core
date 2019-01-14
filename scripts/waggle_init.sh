@@ -482,7 +482,21 @@ recover_other_disk() {
   echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID} /media/boot vfat  defaults,rw,owner,flush,umask=000 0 0" >> ${OTHER_DISK_P2}/etc/fstab
   echo "tmpfs   /tmp  tmpfs nodev,nosuid,mode=1777      0 0" >> ${OTHER_DISK_P2}/etc/fstab
 
-  echo "removing do_recovery special files..."
+  # write /etc/fstab_ro
+  echo "updating ${OTHER_DISK_DEVICE_TYPE} card's /etc/fstab with the new partition UUIDs..."
+  echo "UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}  /       ext4    ro,nosuid,nodev,nofail,noatime,nodiratime            0 1" > ${OTHER_DISK_P2}/etc/fstab_ro
+  echo "UUID=${OTHER_DISK_DEVICE_RW_UUID}      /wagglerw       ext4    errors=remount-ro,noatime,nodiratime            0 1" >> ${OTHER_DISK_P2}/etc/fstab_ro
+  echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID} /media/boot vfat  defaults,rw,owner,flush,umask=000 0 0" >> ${OTHER_DISK_P2}/etc/fstab_ro
+  echo "tmpfs   /tmp  tmpfs nodev,nosuid,mode=1777      0 0" >> ${OTHER_DISK_P2}/etc/fstab_ro
+  
+  # write /etc/fstab_rw
+  echo "updating ${OTHER_DISK_DEVICE_TYPE} card's /etc/fstab with the new partition UUIDs..."
+  echo "UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}  /       ext4    rw,nosuid,nodev,nofail,noatime,nodiratime            0 1" > ${OTHER_DISK_P2}/etc/fstab_rw
+  echo "UUID=${OTHER_DISK_DEVICE_RW_UUID}      /wagglerw       ext4    errors=remount-ro,noatime,nodiratime            0 1" >> ${OTHER_DISK_P2}/etc/fstab_rw
+  echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID} /media/boot vfat  defaults,rw,owner,flush,umask=000 0 0" >> ${OTHER_DISK_P2}/etc/fstab_rw
+  echo "tmpfs   /tmp  tmpfs nodev,nosuid,mode=1777      0 0" >> ${OTHER_DISK_P2}/etc/fstab_rw
+
+echo "removing do_recovery special files..."
 
   rm -f /root/do_recovery
   if [ -e /root/do_recovery ] ; then
