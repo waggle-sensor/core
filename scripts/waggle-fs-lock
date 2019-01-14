@@ -1,30 +1,48 @@
 #!/bin/bash
 
+#checking if the root fs is writable for root. 
 if [ ! -w / ] ; then
     echo "FS is already locked"
     exit 0
 fi
 
+# Another sanity check that we can indeed remount root as rw
 mount -o remount,rw /
 if [ $? -ne 0 ] ; then
   echo "Mounting / as rw failed"
   exit 1
 fi
 
-content=`cat /etc/fstab | grep ' \/ ' | sed 's/rw,/ro,/'`
-#uuid=$(blkid -o export /dev/mmcblk0p2 | grep "^UUID" |  cut -f2 -d '=')
-sed -i '/ \/ /d' /etc/fstab
-sed -i "1i ${content}" /etc/fstab
+# checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems. 
+if [ ! -f /etc/fstab_ro ]; then
+    # old system, so making changes in fstab
+    content=`cat /etc/fstab | grep ' \/ ' | sed 's/rw,/ro,/'`
+    #uuid=$(blkid -o export /dev/mmcblk0p2 | grep "^UUID" |  cut -f2 -d '=')
+    sed -i '/ \/ /d' /etc/fstab
+    sed -i "1i ${content}" /etc/fstab
 
-if [ $(cat /etc/fstab | grep ' \/ ' | grep 'ro,' | wc -l) -eq 0 ] ; then
-  echo "waggle-fs-lock failed"
-  exit 1
+    if [ $(cat /etc/fstab | grep ' \/ ' | grep 'ro,' | wc -l) -eq 0 ] ; then
+        echo "waggle-fs-lock failed"
+        exit 1
+    fi
+
+else
+   # new system, so just moving files appropriately
+   # checking if the files are indeed correct
+   if [ $(diff /etc/fstab_ro /etc/fstab_rw  | head -1) == '1c1' ]; then 
+        cp /etc/fstab_ro /tmp/fstab_ro_tmp
+        mv /tmp/fstab_ro_tmp /etc/fstab
+   else 
+       echo "/etc/fstab_* files are inconsistent. Please check files."
+       exit 1
+   fi
 fi
 
 touch /root/fs_locked
 sync
 
 mount -o remount,ro /
+
 if [ $? -ne 0 ] ; then
   echo "Mounting / as ro failed"
   rm -f /root/fs_locked
