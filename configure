@@ -63,15 +63,8 @@ ln -sf ${current_dir}/scripts/recover-other-media /usr/bin/waggle-recover-other-
 ln -sf ${current_dir}/scripts/device-info /usr/bin/device-info
 
 
-# we should move to the new command names, but for now, we will have both... 
-#old, retire soon
-ln -sf ${current_dir}/scripts/switch-to-safe-operation-mode /usr/bin/waggle-switch-to-operation-mode
-ln -sf ${current_dir}/scripts/switch-to-unsafe-operation-mode /usr/bin/waggle-switch-to-safe-mode
-
-#new, use 
-
-ln -sf ${current_dir}/scripts/switch-to-safe-operation-mode /usr/bin/safe-operation-mode
-ln -sf ${current_dir}/scripts/switch-to-unsafe-operation-mode /usr/bin/unsafe-operation-mode
+ln -sf ${current_dir}/scripts/waggle-safe-mode /usr/bin/waggle-safe-mode
+ln -sf ${current_dir}/scripts/waggle-unsafe-mode /usr/bin/waggle-unsafe-mode
 
 
 # Copy waggle-fs-lock and unlock scripts
