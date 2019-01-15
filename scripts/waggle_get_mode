@@ -33,13 +33,15 @@ fi
 mode="$passwordmode$consolemode$filesysmode$targetmode"
 
 case $mode in
-   ULLP) echo collab-mode ;;
-   ULLC) echo collab-core-mode ;;
-   LLLP) echo deployed-mode ;;
-   LLLC) echo deployed-core-mode ;;
-   LLLC) echo debug-mode ;;
-   LULP) echo burnin-mode ;;
-   LULC) echo burnin-core-mode ;;
-   LUUC) echo build-mode ;;
-   *) echo invalid ;;
+   ULLP) name=collab ;;
+   ULLC) name=collab-core ;;
+   LLLP) name=deploy ;;
+   LLLC) name=deploy-core ;;
+   LLLC) name=debug ;;
+   LULP) name=burnin ;;
+   LULC) name=burnin-core ;;
+   LUUC) name=build ;;
+   *) name=invalid ;;
 esac
+
+echo $mode $name

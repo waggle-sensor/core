@@ -15,7 +15,7 @@ if [ $? -ne 0 ] ; then
   exit 1
 fi
 
-# checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems. 
+# checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems.
 if [ ! -f /etc/fstab_ro ]; then
     # old system, so making changes in fstab
     content=`cat /etc/fstab | grep ' \/ ' | sed 's/ro,/rw,/'`
@@ -29,10 +29,10 @@ if [ ! -f /etc/fstab_ro ]; then
 else
    # new system, so just moving files appropriately
    # checking if the files are indeed correct
-   if [ $(diff /etc/fstab_ro /etc/fstab_rw  | head -1) == '1c1' ]; then 
+   if [ $(diff /etc/fstab_ro /etc/fstab_rw  | head -1) == '1c1' ]; then
         cp /etc/fstab_rw /tmp/fstab_rw_tmp
         mv /tmp/fstab_rw_tmp /etc/fstab
-   else 
+   else
        echo "/etc/fstab_* files are inconsistent. Please check files."
        exit 1
    fi
@@ -41,7 +41,7 @@ fi
 systemctl set-default waggle-core.target
 rm -f /root/fs_locked
 
-#checking if the root fs is writable for root. 
+#checking if the root fs is writable for root.
 if [ ! -w / ] ; then
     echo "waggle-fs-unlock failed"
     exit 0
