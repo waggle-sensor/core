@@ -1,14 +1,12 @@
 #!/bin/bash
 
-echo "Switching to safe mode..."
-
+echo "Switching to unsafe operation mode: making filesystems read-write, unlocking system-password and lowering operation to waggle-core target."
 sync
-
 waggle-fs-unlock
 if [ $? -eq 0 ]; then
-    echo "Switching to safe mode...Done"
+    echo "Switching to unsafe mode...Done"
     exit 0
 else
-    echo "Switching to safe mode...Failed"
+    echo "Switching to unsafe mode...Failed"
     exit 1
 fi
