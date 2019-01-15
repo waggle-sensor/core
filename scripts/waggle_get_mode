@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 if [ $(readlink -f /etc/shadow) == '/etc/passwds/shadow_aot' ]; then
   passwordmode="L"
