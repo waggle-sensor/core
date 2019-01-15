@@ -16,11 +16,6 @@ if matches $(waggle_get_mode); then
     exit 0
 fi
 
-if matches 'LU..'; then
-    echo 'warning! console should be locked if password locked.'
-    # exit 1
-fi
-
 # almost all actions currently require writable fs
 waggle-fs-unlock
 
