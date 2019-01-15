@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Switching to operation mode..."
+echo "Switching to safe operation mode: making filesystems read-only and starting waggle platform target."
 
 current_device=$(mount | grep "on / " | cut -f 1 -d ' ' | grep -o "mmcblk[0-1]")
 number_of_partitions=$(ls /sys/block/$current_device/ | grep -o "${current_device}p[0-3]" | wc -l)
@@ -20,18 +20,20 @@ systemctl restart waggle-heartbeat.service
 waggle-pw-lock
 password=$(readlink /etc/shadow | grep aot | wc -l)
 if [ "$password" != "1" ]; then
-    echo "Password lock failed. Switching failed"
+    echo "Password lock failed."
+    echo "!!!!!!!!!!!!!! Switch Unsuccessful !!!!!!!!!!!!!!"
     exit 1
 fi
 
 systemctl set-default waggle-platform.target
 waggle-fs-lock
 if [ $? -ne 0 ]; then
-    echo "Locking filesystem failed, Switching failed"
+    echo "Locking filesystem failed."
+    echo "!!!!!!!!!!!!!! Switch Unsuccessful !!!!!!!!!!!!!!"
     systemctl set-default waggle-core.target
     sync
     exit 1
 fi
 systemctl isolate waggle-platform.target
 
-echo "Switching to operation mode...Done"
+echo "!!!!!!!!!!!!!! Switch Unsuccessful !!!!!!!!!!!!!!"
