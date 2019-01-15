@@ -1,1 +1,36 @@
+#!/bin/bash
 
+mode="$1"
+
+matches() {
+    echo $mode | grep -q $1
+}
+
+if ! matches '^[LU][LU][LU][CP]$'; then
+    echo invalid mode
+    exit 1
+fi
+
+if matches 'L...'; then
+    echo lock pw
+else
+    echo unlock pw
+fi
+
+if matches '.L..'; then
+    echo lock console
+else
+    echo unlock console
+fi
+
+if matches '..L.'; then
+    echo lock fs
+else
+    echo unlock fs
+fi
+
+if matches '...C'; then
+    echo core mode
+else
+    echo platform mode
+fi
