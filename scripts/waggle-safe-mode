@@ -36,4 +36,4 @@ if [ $? -ne 0 ]; then
 fi
 systemctl isolate waggle-platform.target
 
-echo "!!!!!!!!!!!!!! Switch Unsuccessful !!!!!!!!!!!!!!"
+echo "Switch Successful"
