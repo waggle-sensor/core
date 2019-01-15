@@ -16,6 +16,8 @@ if matches 'LU..'; then
     exit 1
 fi
 
+waggle-fs-unlock
+
 if matches 'L...'; then
     echo lock pw
     waggle-pw-lock
@@ -32,14 +34,6 @@ else
     waggle-console-unlock
 fi
 
-if matches '..L.'; then
-    echo lock fs
-    waggle-fs-lock
-else
-    echo unlock fs
-    waggle-fs-unlock
-fi
-
 if matches '...C'; then
     echo core mode
     systemctl set-default waggle-core.target
@@ -48,4 +42,12 @@ else
     echo platform mode
     systemctl set-default waggle-platform.target
     systemctl isolate waggle-platform.target
+fi
+
+if matches '..L.'; then
+    echo lock fs
+    waggle-fs-lock
+else
+    echo unlock fs
+    waggle-fs-unlock
 fi
