@@ -12,8 +12,8 @@ if ! matches '^[LU][LU][LU][CP]$'; then
 fi
 
 if matches 'LU..'; then
-    echo 'invalid mode. console must be locked if password locked.'
-    exit 1
+    echo 'warning! console should be locked if password locked.'
+    # exit 1
 fi
 
 # almost all actions currently require writable fs
