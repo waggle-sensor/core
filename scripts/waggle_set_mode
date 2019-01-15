@@ -7,12 +7,12 @@ matches() {
 }
 
 if ! matches '^[LU][LU][LU][CP]$'; then
-    echo invalid mode
+    echo 'invalid mode. mode must match [LU][LU][LU][CP].'
     exit 1
 fi
 
 if matches 'LU..'; then
-    echo invalid mode. console must be locked if password locked.
+    echo 'invalid mode. console must be locked if password locked.'
     exit 1
 fi
 
