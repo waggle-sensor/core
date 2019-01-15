@@ -15,9 +15,7 @@ if [ $? -ne 0 ] ; then
   exit 1
 fi
 
-
 systemctl set-default waggle-core.target
-
 
 # checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems.
 if [ ! -f /etc/fstab_ro ]; then
