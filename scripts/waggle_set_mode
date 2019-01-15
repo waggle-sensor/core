@@ -43,7 +43,9 @@ fi
 if matches '...C'; then
     echo core mode
     systemctl set-default waggle-core.target
+    systemctl isolate waggle-core.target
 else
     echo platform mode
     systemctl set-default waggle-platform.target
+    systemctl isolate waggle-platform.target
 fi
