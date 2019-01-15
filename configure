@@ -62,17 +62,11 @@ ln -sf ${current_dir}/scripts/status-service /usr/bin/waggle-status
 ln -sf ${current_dir}/scripts/recover-other-media /usr/bin/waggle-recover-other-media
 ln -sf ${current_dir}/scripts/device-info /usr/bin/device-info
 
-ln -sf ${current_dir}/scripts/waggle-safe-mode /usr/bin/waggle-safe-mode
-ln -sf ${current_dir}/scripts/waggle-unsafe-mode /usr/bin/waggle-unsafe-mode
+# add symlink to /usr/bin for all waggle-* scripts
+for p in $(find ${current_dir}/scripts -name 'waggle-*'); do
+    ln -sf $p /usr/bin/$(basename $p)
+done
 
-
-# Copy waggle-fs-lock and unlock scripts
-ln -sf ${current_dir}/scripts/waggle-fs-lock /usr/bin/waggle-fs-lock
-ln -sf ${current_dir}/scripts/waggle-fs-unlock /usr/bin/waggle-fs-unlock
-
-
-ln -sf ${current_dir}/scripts/waggle-console-lock /usr/bin/waggle-console-lock
-ln -sf ${current_dir}/scripts/waggle-console-unlock /usr/bin/waggle-console-unlock
 
 set +x
 
