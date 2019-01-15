@@ -1,34 +1,45 @@
 #!/bin/bash
 
-if [ $(readlink -f /etc/shadow) == '/etc/passwds/shadow_aot' ]; then 
+if [ $(readlink -f /etc/shadow) == '/etc/passwds/shadow_aot' ]; then
   passwordmode="L"
-elif [ $(readlink -f /etc/shadow) == '/etc/passwds/shadow_waggle' ]; then 
+elif [ $(readlink -f /etc/shadow) == '/etc/passwds/shadow_waggle' ]; then
   passwordmode="U"
-else 
+else
   passwordmode="X"
 fi
 
-if [ -f "/etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf" ] || [ -f "/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf" ]; then 
+if [ -f "/etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf" ] || [ -f "/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf" ]; then
   consolemode="U"
-elif [ -f "/etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf.save" ] && [ -f "/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf.save" ]; then 
+elif [ -f "/etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf.save" ] && [ -f "/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf.save" ]; then
   consolemode="L"
-else 
+else
   consolemode="X"
 fi
 
-if [ -w "/" ] ; then 
+if [ -w "/" ] ; then
    filesysmode="U"
-else 
+else
    filesysmode="L"
 fi
-
 
 if [ "$(systemctl get-default)" == "waggle-platform.target" ]; then
    targetmode="P"
 elif [ "$(systemctl get-default)" == "waggle-core.target" ]; then
    targetmode="C"
-else 
+else
    targetmode="X"
 fi
 
-echo $passwordmode$consolemode$filesysmode$targetmode
+mode="$passwordmode$consolemode$filesysmode$targetmode"
+
+case $mode in
+   ULLP) echo collab-mode ;;
+   ULLC) echo collab-core-mode ;;
+   LLLP) echo deployed-mode ;;
+   LLLC) echo deployed-core-mode ;;
+   LLLC) echo debug-mode ;;
+   LULP) echo burnin-mode ;;
+   LULC) echo burnin-core-mode ;;
+   LUUC) echo build-mode ;;
+   *) echo invalid ;;
+esac
