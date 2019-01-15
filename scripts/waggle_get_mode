@@ -21,3 +21,5 @@ if [ -w "/" ] ; then
 else 
    filesysmode="L"
 fi
+
+
