@@ -15,6 +15,10 @@ if [ $? -ne 0 ] ; then
   exit 1
 fi
 
+
+systemctl set-default waggle-core.target
+
+
 # checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems.
 if [ ! -f /etc/fstab_ro ]; then
     # old system, so making changes in fstab
@@ -38,7 +42,6 @@ else
    fi
 fi
 
-systemctl set-default waggle-core.target
 rm -f /root/fs_locked
 
 #checking if the root fs is writable for root.
