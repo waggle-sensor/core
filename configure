@@ -71,8 +71,8 @@ ln -sf ${current_dir}/scripts/waggle-fs-lock /usr/bin/waggle-fs-lock
 ln -sf ${current_dir}/scripts/waggle-fs-unlock /usr/bin/waggle-fs-unlock
 
 
-ln -sf ${current_dir}/scripts/console-lock /usr/bin/console-lock
-ln -sf ${current_dir}/scripts/console-unlock /usr/bin/console-unlock
+ln -sf ${current_dir}/scripts/waggle-console-lock /usr/bin/waggle-console-lock
+ln -sf ${current_dir}/scripts/waggle-console-unlock /usr/bin/waggle-console-unlock
 
 set +x
 
