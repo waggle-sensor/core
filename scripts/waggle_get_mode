@@ -23,3 +23,12 @@ else
 fi
 
 
+if [ "$(systemctl get-default)" == "waggle-platform.target" ]; then
+   targetmode="P"
+elif [ "$(systemctl get-default)" == "waggle-core.target" ]; then
+   targetmode="C"
+else 
+   targetmode="X"
+fi
+
+echo $passwordmode$consolemode$filesysmode$targetmode
