@@ -16,6 +16,7 @@ if matches 'LU..'; then
     exit 1
 fi
 
+# almost all actions currently require writable fs
 waggle-fs-unlock
 
 if matches 'L...'; then
@@ -45,9 +46,5 @@ else
 fi
 
 if matches '..L.'; then
-    echo lock fs
     waggle-fs-lock
-else
-    echo unlock fs
-    waggle-fs-unlock
 fi
