@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ -w "/" ] ; then
+    mv /etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf.save /etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf
+    mv /etc/systemd/system/serial-getty@ttyS0.service.d/override.conf.save /etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
+    systemctl restart serial-getty@ttySAC2
+else
+    /usr/bin/unsafe-operation-mode
+    mv /etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf.save /etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf
+    mv /etc/systemd/system/serial-getty@ttyS0.service.d/override.conf.save /etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
+    /usr/bin/safe-operation-mode
+    systemctl restart serial-getty@ttySAC2
+fi
