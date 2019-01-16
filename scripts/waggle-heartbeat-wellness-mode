@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "wellness" > /etc/waggle/hbmode
+sync
+systemctl restart waggle-heartbeat.service
