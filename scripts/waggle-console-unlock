@@ -1,7 +1,5 @@
 #!/bin/bash
 
-mv /etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf.save /etc/systemd/system/serial-getty@ttySAC2.service.d/override.conf || true
-systemctl restart serial-getty@ttySAC2.service || true
-
-mv /etc/systemd/system/serial-getty@ttyS0.service.d/override.conf.save /etc/systemd/system/serial-getty@ttyS0.service.d/override.conf || true
-systemctl restart serial-getty@ttyS0.service || true
+for d in /etc/systemd/system/serial-getty@*.service.d/; do
+    (cd $d; mv override.conf.save override.conf)
+done
