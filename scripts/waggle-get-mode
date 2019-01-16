@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "System Mode:"$(waggle_get_mode)
+systemctl restart waggle-heartbeat.service
+echo "Heartbeat Mode:"$(cat /etc/waggle/hbmode)
