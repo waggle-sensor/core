@@ -1,5 +1,6 @@
 #!/bin/bash
 
 for d in /etc/systemd/system/serial-getty@*.service.d/; do
+    echo "Unlocking console $d"
     (cd $d; mv override.conf.save override.conf)
 done
