@@ -6,12 +6,16 @@ matches() {
     echo $mode | grep -q $1
 }
 
-if ! matches '^[LU][LU][LU][CP]$'; then
-    echo 'invalid mode. mode must match [LU][LU][LU][CP].'
+matches_required() {
+    echo $mode | cut -c -4 | grep -q $1
+}
+
+if ! matches '^[LU][LU][LU][CP][AWX]$'; then
+    echo 'invalid mode. mode must match [LU][LU][LU][CP][AWX].'
     exit 1
 fi
 
-if matches $(waggle_get_mode); then
+if matches_required $(waggle_get_mode); then
     echo 'already in correct mode. no actions will be taken.'
     exit 0
 fi
@@ -35,7 +39,7 @@ trap failsafe EXIT
 # almost all actions currently require writable fs
 waggle-fs-unlock
 
-if matches 'L...'; then
+if matches 'L....'; then
     echo lock pw
     waggle-pw-lock
 else
@@ -43,7 +47,7 @@ else
     waggle-pw-unlock
 fi
 
-if matches '.L..'; then
+if matches '.L...'; then
     echo lock console
     waggle-console-lock
 else
@@ -51,7 +55,13 @@ else
     waggle-console-unlock
 fi
 
-if matches '...C'; then
+if matches '....A'; then
+    waggle-heartbeat-always-mode
+elif matches '....W'; then
+    waggle-heartbeat-wellness-mode
+fi
+
+if matches '...C.'; then
     echo core mode
     systemctl set-default waggle-core.target
     systemctl isolate waggle-core.target
@@ -61,6 +71,6 @@ else
     systemctl isolate waggle-platform.target
 fi
 
-if matches '..L.'; then
+if matches '..L..'; then
     waggle-fs-lock
 fi
