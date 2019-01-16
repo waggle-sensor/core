@@ -6,6 +6,20 @@ matches() {
     echo $mode | grep -q $1
 }
 
+failsafe() {
+    if [ $? -eq 0 ]; then
+        return
+    fi
+
+    echo 'an error occured. attempting to set system to safe mode.'
+    set +e
+    systemctl set-default waggle-core.target
+    systemctl isolate waggle-core.target
+    waggle-pw-lock
+    waggle-console-lock
+    waggle-fs-lock
+}
+
 if ! matches '^[LU][LU][LU][CP]$'; then
     echo 'invalid mode. mode must match [LU][LU][LU][CP].'
     exit 1
@@ -15,6 +29,8 @@ if matches $(waggle_get_mode); then
     echo 'already in correct mode. no actions will be taken.'
     exit 0
 fi
+
+trap failsafe EXIT
 
 # almost all actions currently require writable fs
 waggle-fs-unlock
