@@ -1,3 +1,3 @@
 #!/bin/bash
 
-waggle_set_mode LULC
+waggle_set_mode LULCW
