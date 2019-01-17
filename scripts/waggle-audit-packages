@@ -1,0 +1,11 @@
+#!/bin/bash
+
+rm -rf /tmp/audit
+mkdir -p /tmp/audit
+cd /tmp/audit
+
+pip freeze > pip
+pip3 freeze > pip3
+dpkg -l > dpkg
+
+shasum *
