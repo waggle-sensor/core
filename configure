@@ -46,7 +46,8 @@ systemctl enable \
   rabbitmq-server.service \
   waggle-configure-rabbitmq.service \
   waggle-plugin-message-router.service \
-  waggle-monitor-plugins.service
+  waggle-monitor-plugins.service \
+  waggle-cleanup-system.timer
 
 systemctl set-default waggle-core.target
 
