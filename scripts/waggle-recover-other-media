@@ -1,12 +1,13 @@
 #!/bin/bash
 
-set -e 
+set -e
 # Switch back to unsafe-operation mode
 switch-to-unsafe-operation-mode
 
 
 # Force recovery
-touch /root/do_recovery
+mkdir -p /wagglerw
+touch /wagglerw/do_recovery
 
 # Recover the other media
 systemctl isolate waggle-core.target

@@ -307,9 +307,9 @@ check_other_partitions() {
 }
 
 detect_recovery() {
-  echo "checking for /root/do_recovery..."
-  if [[ -e /root/do_recovery || ${DEBUG} -eq 1 ]] ; then
-    echo "ENABLING RECOVERY: /root/do_recovery exists"
+  echo "checking for /wagglerw/do_recovery..."
+  if [[ -e /wagglerw/do_recovery || ${DEBUG} -eq 1 ]] ; then
+    echo "ENABLING RECOVERY: /wagglerw/do_recovery exists"
     return 1
   fi
 
@@ -392,14 +392,14 @@ recover_other_disk() {
     cd /media/data
   fi
 
-  rsync --archive --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude=lost+found --exclude='/var/*' --exclude='/srv/*' --exclude='aafirstboot' --exclude='.first_boot' --exclude='/usr/lib/waggle/core/scripts/aafirstboot' --exclude='/root/do_recovery'
+  rsync --archive --one-file-system ./ ${OTHER_DISK_P2} --exclude=recovery_p1.tar.gz --exclude=recovery_p1.tar.gz_part --exclude=recovery_p2.tar.gz_part --exclude=recovery_p2.tar.gz --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/tmp/*' --exclude='/run/*' --exclude='/mnt/*' --exclude='/media/*' --exclude=lost+found --exclude='/var/*' --exclude='/srv/*' --exclude='aafirstboot' --exclude='.first_boot' --exclude='/usr/lib/waggle/core/scripts/aafirstboot' --exclude='/wagglerw/do_recovery'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
     # exit code 1 means: Some files differ
     exit $exitcode
   fi
   touch ${OTHER_DISK_P2}/recovered.txt
-  
+
   rsync -L --archive --one-file-system ./var ${OTHER_DISK_P3} --exclude=lost+found --exclude='/var/cache/apt/*' --exclude='/var/log/*' --exclude='/var/lib/rabbitmq/*'
   exitcode=$?
   if [ "$exitcode" != "1" ] && [ "$exitcode" != "0" ]; then
@@ -417,18 +417,18 @@ recover_other_disk() {
   cd ${OTHER_DISK_P2}
 
   # Put do_recovery in the other media if requested
-  recover_me=$(cat /root/do_recovery)
+  recover_me=$(cat /wagglerw/do_recovery)
   if [ "$recover_me" == "recover me" ] ; then
-    touch ${OTHER_DISK_P2}/root/do_recovery
+    touch ${OTHER_DISK_P2}/wagglerw/do_recovery
   fi
-  
+
   mkdir -p wagglerw
-  rm -rf var 
+  rm -rf var
   rm -rf srv
-  
+
   ln -s /wagglerw/var var
   ln -s /wagglerw/srv srv
-  
+
   cd ${OTHER_DISK_P3}
 
   mkdir -p waggle
@@ -443,13 +443,13 @@ recover_other_disk() {
   ln -s /wagglerw/etc/adjtime etc/adjtime
   cd ${OTHER_DISK_P3}
 
-  
+
   # Ubuntu 18.04 requires /var/run and /run to be the same
-  rm -rf var/run 
+  rm -rf var/run
   ln -s /run var/run
-  
+
   chown rabbitmq:rabbitmq var/log/rabbitmq/
-  
+
   cd /
   touch ${OTHER_DISK_P3}/recovered.txt
 
@@ -464,7 +464,7 @@ recover_other_disk() {
 
   OTHER_DISK_DEVICE_RW_UUID=$(blkid -o export ${OTHER_DISK_DEVICE}p3 | grep "^UUID" |  cut -f2 -d '=')
   echo "OTHER_DISK_DEVICE_RW_UUID: ${OTHER_DISK_DEVICE_RW_UUID}"
-  
+
   # modify boot.ini
   echo "updating ${OTHER_DISK_DEVICE_TYPE} card's boot.ini with the new data partition UUID..."
   sed -i.bak 's/root=UUID=[a-fA-F0-9-]*/root=UUID='${OTHER_DISK_DEVICE_ROOTFS_UUID}'/' ${OTHER_DISK_P1}/boot.ini
@@ -488,7 +488,7 @@ recover_other_disk() {
   echo "UUID=${OTHER_DISK_DEVICE_RW_UUID}      /wagglerw       ext4    errors=remount-ro,noatime,nodiratime            0 1" >> ${OTHER_DISK_P2}/etc/fstab_ro
   echo "UUID=${OTHER_DISK_DEVICE_BOOT_UUID} /media/boot vfat  defaults,rw,owner,flush,umask=000 0 0" >> ${OTHER_DISK_P2}/etc/fstab_ro
   echo "tmpfs   /tmp  tmpfs nodev,nosuid,mode=1777      0 0" >> ${OTHER_DISK_P2}/etc/fstab_ro
-  
+
   # write /etc/fstab_rw
   echo "updating ${OTHER_DISK_DEVICE_TYPE} card's /etc/fstab with the new partition UUIDs..."
   echo "UUID=${OTHER_DISK_DEVICE_ROOTFS_UUID}  /       ext4    rw,nosuid,nodev,nofail,noatime,nodiratime            0 1" > ${OTHER_DISK_P2}/etc/fstab_rw
@@ -498,9 +498,9 @@ recover_other_disk() {
 
 echo "removing do_recovery special files..."
 
-  rm -f /root/do_recovery
-  if [ -e /root/do_recovery ] ; then
-    echo "Could not remove /root/do_recovery."
+  rm -f /wagglerw/do_recovery
+  if [ -e /wagglerw/do_recovery ] ; then
+    echo "Could not remove /wagglerw/do_recovery."
     exit 1
   fi
 
@@ -682,8 +682,9 @@ assert_dependencies
 # check various conditions to determine if recovery of the other boot disk is needed
 RECOVERY_NEEDED=0
 if [ ${FORCE_RECOVERY} -eq 1 ]; then
-  touch /root/do_recovery
-else 
+  mkdir -p /wagglerw
+  touch /wagglerw/do_recovery
+else
   detect_recovery
   RECOVERY_NEEDED=$?
 fi
