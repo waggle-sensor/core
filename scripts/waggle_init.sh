@@ -643,9 +643,10 @@ declare -r DEBUG_HOST=""
 # This file can be used by other services to avoid reboots
 # until the waggle-init service has finished performing
 # critical activities.
-declare -r OTHER_DISK_P1=/media/otherp1
-declare -r OTHER_DISK_P2=/media/otherp2
-declare -r OTHER_DISK_P3=/media/otherp3
+mkdir -p /wagglerw/media
+declare -r OTHER_DISK_P1=/wagglerw/media/otherp1
+declare -r OTHER_DISK_P2=/wagglerw/media/otherp2
+declare -r OTHER_DISK_P3=/wagglerw/media/otherp3
 
 if [ ${DEBUG} -eq 1 ] ; then
   curl --retry 10 "${DEBUG_HOST}/failovertest?status=starting" || true
