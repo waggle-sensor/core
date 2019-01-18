@@ -1,18 +1,22 @@
 #!/bin/bash
 
-# Stop platform services
-systemctl stop -- $(systemctl show -p Wants waggle-platform.target | cut -d '=' -f 2)
-
-if [ $? -ne 0 ]; then
-    echo "Failed to stop waggle-platform services. Unlocking failed"
+fatal() {
+    >&2 echo $*
     exit 1
+}
+
+# Stop platform services
+if ! systemctl stop -- $(systemctl show -p Wants waggle-platform.target | cut -d '=' -f 2); then
+    fatal "Failed to stop waggle-platform services. Unlocking failed"
 fi
 
-mount -o remount,rw /
+# Remount as RW
+if ! mount -o remount,rw /; then
+    fatal "error: remount rootfs failed"
+fi
 
-if [ $? -ne 0 ] ; then
-  echo "Mounting / as rw failed"
-  exit 1
+if [ ! -w / ] ; then
+    fatal "error: rootfs is not writable"
 fi
 
 # checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems.
@@ -23,8 +27,7 @@ if [ ! -f /etc/fstab_ro ]; then
     sed -i "1i ${content}" /etc/fstab
 
     if [ $(cat /etc/fstab | grep ' \/ ' | grep 'rw,' | wc -l) -eq 0 ] ; then
-        echo "waggle-fs-unlock failed"
-        exit 1
+        fatal "waggle-fs-unlock failed"
     fi
 else
    # new system, so just moving files appropriately
@@ -33,14 +36,8 @@ else
         cp /etc/fstab_rw /tmp/fstab_rw_tmp
         mv /tmp/fstab_rw_tmp /etc/fstab
    else
-       echo "/etc/fstab_* files are inconsistent. Please check files."
-       exit 1
+       fatal "/etc/fstab_* files are inconsistent. Please check files."
    fi
-fi
-
-if [ ! -w / ] ; then
-    echo "waggle-fs-unlock failed"
-    exit 1
 fi
 
 systemctl set-default waggle-core.target
