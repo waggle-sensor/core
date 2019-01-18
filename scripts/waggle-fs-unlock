@@ -38,13 +38,12 @@ else
    fi
 fi
 
-systemctl set-default waggle-core.target
-rm -f /root/fs_locked
-
-#checking if the root fs is writable for root.
 if [ ! -w / ] ; then
     echo "waggle-fs-unlock failed"
-    exit 0
+    exit 1
 fi
+
+systemctl set-default waggle-core.target
+rm -f /root/fs_locked
 
 echo "waggle-fs-unlock is done"
