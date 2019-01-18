@@ -725,6 +725,7 @@ systemctl restart systemd-random-seed.service
 echo "* restart networking.service"
 systemctl restart networking.service
 
+mkdir -p /wagglerw
 touch /wagglerw/init_finished
 
 if [ ${DEBUG} -eq 1 ] ; then
