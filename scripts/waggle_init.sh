@@ -419,7 +419,7 @@ recover_other_disk() {
   # Put do_recovery in the other media if requested
   recover_me=$(cat /wagglerw/do_recovery)
   if [ "$recover_me" == "recover me" ] ; then
-    touch ${OTHER_DISK_P2}/wagglerw/do_recovery
+    touch ${OTHER_DISK_P3}/do_recovery
   fi
 
   mkdir -p wagglerw
@@ -643,8 +643,6 @@ declare -r DEBUG_HOST=""
 # This file can be used by other services to avoid reboots
 # until the waggle-init service has finished performing
 # critical activities.
-declare -r INIT_FINISHED_FILE="/etc/waggle/init_finished"
-
 declare -r OTHER_DISK_P1=/media/otherp1
 declare -r OTHER_DISK_P2=/media/otherp2
 declare -r OTHER_DISK_P3=/media/otherp3
@@ -655,9 +653,7 @@ fi
 
 echo "starting waggle_init.sh"
 
-
-
-rm -f ${INIT_FINISHED_FILE}
+rm -f /wagglerw/init_finished || true
 
 # set the following global variables:
 #   ODROID_MODEL, MAC_ADDRESS, MAC_STRING, CURRENT_DISK_DEVICE, CURRENT_DISK_DEVICE_NAME,
@@ -729,7 +725,7 @@ systemctl restart systemd-random-seed.service
 echo "* restart networking.service"
 systemctl restart networking.service
 
-touch ${INIT_FINISHED_FILE}
+touch /wagglerw/init_finished
 
 if [ ${DEBUG} -eq 1 ] ; then
   curl --retry 10 "${DEBUG_HOST}/failovertest?status=done" || true
