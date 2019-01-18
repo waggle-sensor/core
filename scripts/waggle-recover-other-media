@@ -1,9 +1,7 @@
-#!/bin/bash
+#!/bin/bash -e
 
-set -e
 # Switch back to unsafe-operation mode
-switch-to-unsafe-operation-mode
-
+waggle-mode-burnin-core
 
 # Force recovery
 mkdir -p /wagglerw
@@ -27,4 +25,4 @@ while [ ! -f /etc/waggle/init_finished ]; do
 done
 
 # Switch back to operation mode
-switch-to-safe-operation-mode
+waggle-mode-burnin
