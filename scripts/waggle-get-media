@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if udevadm info --q property -a /dev/disk/by-label/rootfs | grep -q 'ATTRS{type}.*SD'; then
+    echo sd
+    exit 0
+fi
+
+if udevadm info --q property -a /dev/disk/by-label/rootfs | grep -q 'ATTRS{type}.*MMC'; then
+    echo emmc
+    exit 0
+fi
+
+>&2 echo unknown media
+exit 1
