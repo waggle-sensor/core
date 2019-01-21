@@ -3,8 +3,6 @@ Description=RabbitMQ broker
 After=network.target epmd@0.0.0.0.socket waggle-platform.target
 Wants=network.target epmd@0.0.0.0.socket
 
-ConditionPathExists=/root/fs_locked
-
 [Service]
 Type=notify
 User=rabbitmq
@@ -12,6 +10,7 @@ Group=rabbitmq
 NotifyAccess=all
 TimeoutStartSec=3600
 WorkingDirectory=/var/lib/rabbitmq
+ExecStartPre=/bin/bash -c 'mkdir -p /var/lib/rabbitmq /var/log/rabbitmq; chown -R rabbitmq:rabbitmq /var/lib/rabbitmq /var/log/rabbitmq'
 ExecStart=/usr/lib/rabbitmq/bin/rabbitmq-server
 ExecStop=/usr/lib/rabbitmq/bin/rabbitmqctl stop
 
