@@ -10,6 +10,7 @@ Group=rabbitmq
 NotifyAccess=all
 TimeoutStartSec=3600
 WorkingDirectory=/var/lib/rabbitmq
+PermissionsStartOnly=true
 ExecStartPre=/bin/bash -c 'mkdir -p /var/lib/rabbitmq /var/log/rabbitmq; chown -R rabbitmq:rabbitmq /var/lib/rabbitmq /var/log/rabbitmq'
 ExecStart=/usr/lib/rabbitmq/bin/rabbitmq-server
 ExecStop=/usr/lib/rabbitmq/bin/rabbitmqctl stop
