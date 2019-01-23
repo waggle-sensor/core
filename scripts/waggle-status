@@ -675,11 +675,12 @@ def gather_data_wagman():
                 elif 'date' in subject:
                     struct_time = time.strptime(args, '%Y %m %d %H %M %S')
                     values['time']['current'] = int(time.mktime(struct_time))
-                elif 'env' in subject:
-                    sp = args.split(' ')
-                    if len(sp) == 2:
-                        values['htu21d']['temperature'] = int(float(sp[0]))
-                        values['htu21d']['humidity'] = int(float(sp[1]))
+                elif 'temperature' in subject:
+                    fields = args.split()
+                    values['htu21d']['temperature'] = int(float(fields[2]))
+                elif 'humidity' in subject:
+                    fields = args.split()
+                    values['htu21d']['humidity'] = int(float(fields[2]))
                 elif 'fails' in subject:
                     sp = args.split(' ')
                     if len(sp) == 5:
