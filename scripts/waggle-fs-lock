@@ -39,6 +39,7 @@ mount_root_as_readonly() {
     for _ in seq 6; do
         touch /root/fs_locked
         sync
+        sleep 1
 
         if mount -o remount,ro /; then
             echo "mounted / as ro"
@@ -49,7 +50,6 @@ mount_root_as_readonly() {
 
         rm -f /root/fs_locked
         sync
-
         sleep 10
     done
 
