@@ -1,19 +1,17 @@
 #!/bin/bash
 
-#checking if the root fs is writable for root. 
+fatal() {
+    >&2 echo $*
+    exit 1
+}
+
+# checking if the root fs is writable for root.
 if [ ! -w / ] ; then
     echo "FS is already locked"
     exit 0
 fi
 
-# Another sanity check that we can indeed remount root as rw
-mount -o remount,rw /
-if [ $? -ne 0 ] ; then
-  echo "Mounting / as rw failed"
-  exit 1
-fi
-
-# checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems. 
+# checking if the /etc/fstab_ro file exists, and provide backward compatability for old systems.
 if [ ! -f /etc/fstab_ro ]; then
     # old system, so making changes in fstab
     content=`cat /etc/fstab | grep ' \/ ' | sed 's/rw,/ro,/'`
@@ -21,31 +19,46 @@ if [ ! -f /etc/fstab_ro ]; then
     sed -i "1i ${content}" /etc/fstab
 
     if [ $(cat /etc/fstab | grep ' \/ ' | grep 'ro,' | wc -l) -eq 0 ] ; then
-        echo "waggle-fs-lock failed"
-        exit 1
+        fatal "waggle-fs-lock failed"
     fi
 
 else
    # new system, so just moving files appropriately
    # checking if the files are indeed correct
-   if [ $(diff /etc/fstab_ro /etc/fstab_rw  | head -1) == '1c1' ]; then 
+   if [ $(diff /etc/fstab_ro /etc/fstab_rw  | head -1) == '1c1' ]; then
         cp /etc/fstab_ro /tmp/fstab_ro_tmp
         mv /tmp/fstab_ro_tmp /etc/fstab
-   else 
-       echo "/etc/fstab_* files are inconsistent. Please check files."
-       exit 1
+   else
+       fatal "/etc/fstab_* files are inconsistent. Please check files."
    fi
 fi
 
-touch /root/fs_locked
-sync
+mount_root_as_readonly() {
+    echo "mounting / as ro"
 
-mount -o remount,ro /
+    for _ in seq 6; do
+        touch /root/fs_locked
+        sync
 
-if [ $? -ne 0 ] ; then
-  echo "Mounting / as ro failed"
-  rm -f /root/fs_locked
-  exit 1
+        if mount -o remount,ro /; then
+            echo "mounted / as ro"
+            return
+        fi
+
+        echo "warning: mounting / as ro failed. will retry in 10s."
+
+        rm -f /root/fs_locked
+        sync
+
+        sleep 10
+    done
+
+    echo "error: mounting / as ro failed. giving up."
+    return 1
+}
+
+if ! mount_root_as_readonly; then
+    fatal "could not mount root as ro"
 fi
 
 echo "waggle-fs-lock is done"
