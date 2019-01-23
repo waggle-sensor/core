@@ -45,7 +45,7 @@ failsafe() {
     systemctl set-default waggle-core.target
     systemctl isolate waggle-core.target
     waggle-pw-lock
-    waggle-console-lock
+    # waggle-console-lock <- this is a potential problem for burn in process
     waggle-fs-lock
 }
 
