@@ -1,5 +1,4 @@
-#!/bin/bash
-set -e
+#!/bin/bash -e
 
 # Documentation
 #
@@ -117,17 +116,41 @@ should_heartbeat() {
   return 0
 }
 
-# TODO detect new or old mechanism
-while true; do
-  if should_heartbeat; then
-    echo "heartbeat"
-    # old hb mechanism
+do_heartbeat_v1() {
+    echo "heartbeat - toggle pins"
     echo 1 > /sys/class/gpio/gpio${GPIO_EXPORT}/value
     sleep 1
     echo 0  > /sys/class/gpio/gpio${GPIO_EXPORT}/value
     sleep 1
-    # new hb mechanism.
+}
+
+do_heartbeat_v2() {
+    echo "heartbeat - ping serial"
     echo hello > $SERIAL
+}
+
+wagman_version=$(cat /wagglerw/waggle/wagman_version || true)
+
+do_heartbeat() {
+    echo "heartbeat"
+    case "$wagman_version" in
+        v1)
+            do_heartbeat_v1
+            ;;
+        v2)
+            do_heartbeat_v2
+            ;;
+        *)
+            do_heartbeat_v1
+            do_heartbeat_v2
+            ;;
+    esac
+}
+
+# TODO detect new or old mechanism
+while true; do
+  if should_heartbeat; then
+    do_heartbeat
   else
     echo "skipping heartbeat"
     sleep 1
