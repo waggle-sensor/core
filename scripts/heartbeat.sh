@@ -147,7 +147,7 @@ do_heartbeat() {
 }
 
 while true; do
-    # refresh wagman version
+    echo "refresh config"
     wagman_version=$(cat /wagglerw/waggle/wagman_version || true)
 
     for _ in seq 60; do
