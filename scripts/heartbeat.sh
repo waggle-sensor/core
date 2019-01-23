@@ -147,7 +147,6 @@ do_heartbeat() {
     esac
 }
 
-# TODO detect new or old mechanism
 while true; do
   if should_heartbeat; then
     do_heartbeat
