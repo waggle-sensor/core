@@ -2,21 +2,6 @@
 
 mode="$1"
 
-retry() {
-    count=$1
-    delay=$2
-
-    for i in seq 0 $count; do
-        if ${@:3}; then
-            return
-        fi
-
-        sleep "$delay"
-    done
-
-    return 1
-}
-
 matches() {
     echo $mode | grep -q $1
 }
@@ -87,5 +72,5 @@ else
 fi
 
 if matches '..L..'; then
-    retry 10 5 waggle-fs-lock
+    waggle-fs-lock
 fi
