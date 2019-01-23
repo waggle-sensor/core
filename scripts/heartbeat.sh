@@ -129,11 +129,10 @@ do_heartbeat_v2() {
     echo hello > $SERIAL
 }
 
-wagman_version=$(cat /wagglerw/waggle/wagman_version || true)
-
 do_heartbeat() {
     echo "heartbeat"
-    case "$wagman_version" in
+
+    case "$1" in
         v1)
             do_heartbeat_v1
             ;;
@@ -148,10 +147,16 @@ do_heartbeat() {
 }
 
 while true; do
-  if should_heartbeat; then
-    do_heartbeat
-  else
-    echo "skipping heartbeat"
-    sleep 1
-  fi
+    # refresh wagman version
+    wagman_version=$(cat /wagglerw/waggle/wagman_version || true)
+
+    for _ in seq 60; do
+        if should_heartbeat; then
+            do_heartbeat "$wagman_version"
+        else
+            echo "skipping heartbeat"
+        fi
+
+        sleep 1
+    done
 done
