@@ -150,7 +150,7 @@ while true; do
     echo "refresh config"
     wagman_version=$(cat /wagglerw/waggle/wagman_version || true)
 
-    for _ in seq 60; do
+    for _ in $(seq 60); do
         if should_heartbeat; then
             do_heartbeat "$wagman_version"
         else

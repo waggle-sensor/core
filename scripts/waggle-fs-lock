@@ -36,7 +36,7 @@ fi
 mount_root_as_readonly() {
     echo "mounting / as ro"
 
-    for _ in seq 3; do
+    for _ in $(seq 3); do
         touch /root/fs_locked
         sync
         sleep 1
