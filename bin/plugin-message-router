@@ -3,6 +3,7 @@ import argparse
 import logging
 import pika
 import waggle.protocol
+import re
 
 logger = logging.getLogger('plugin-router')
 
@@ -17,6 +18,16 @@ def read_file(path):
 def get_node_id():
     logging.info('Autodetecting node ID.')
     return read_file('/etc/waggle/node_id').strip()
+
+
+def get_sub_id():
+    logging.info('Autodetecting sub ID.')
+    data = read_file('/proc/cpuinfo')
+    if re.search(b'ODROIDC', data):
+        return '0000000000000000'
+    if re.search(b'ODROID.XU.', data):
+        return '0000000000000001'
+    raise RuntimeError('Unknown sub id.')
 
 
 def unpack_messages_and_datagrams(body):
@@ -52,7 +63,7 @@ def main():
     queue = args.queue
 
     if not queue:
-        queue = 'to-plugins@{}'.format(get_node_id())
+        queue = 'to-plugins@{}'.format(get_sub_id())
 
     logger.info('Routing from {}.'.format(queue))
 
