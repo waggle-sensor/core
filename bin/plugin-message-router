@@ -23,9 +23,9 @@ def get_node_id():
 def get_sub_id():
     logging.info('Autodetecting sub ID.')
     data = read_file('/proc/cpuinfo')
-    if re.search(b'ODROIDC', data):
+    if re.search('ODROIDC', data):
         return '0000000000000000'
-    if re.search(b'ODROID.XU.', data):
+    if re.search('ODROID.XU.', data):
         return '0000000000000001'
     raise RuntimeError('Unknown sub id.')
 
