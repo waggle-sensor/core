@@ -6,7 +6,7 @@ import waggle.protocol
 
 logger = logging.getLogger('plugin-router')
 
-route_format = 'to-plugin-{plugin_id}-{plugin_major_version}.{plugin_minor_version}-{plugin_instance}'
+route_format = 'to-plugin-{plugin_id}-{plugin_major_version}.{plugin_minor_version}.{plugin_patch_version}-{plugin_instance}'
 
 
 def read_file(path):
@@ -45,7 +45,7 @@ def message_handler(ch, method, properties, body):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--url', default='amqp://localhost', help='AMQP broker URL to connect to.')
+    parser.add_argument('--url', default='amqp://guest:guest@localhost', help='AMQP broker URL to connect to.')
     parser.add_argument('--queue', help='Message queue to process.')
     args = parser.parse_args()
 
