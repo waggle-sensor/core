@@ -1,5 +1,5 @@
 [Unit]
-Description=Initializes Waggle system.
+Description=Waggle System Initializer
 After=waggle-core.target
 
 # Start the service only when recover requested
