@@ -1,3 +1,9 @@
+# ANL:waggle-license
+# This file is part of the Waggle Platform.  Please see the file
+# LICENSE.waggle.txt for the legal details of the copyright and software
+# license.  For more details on the Waggle project, visit:
+#          http://www.wa8.gl
+# ANL:waggle-license
 # -*- coding: utf-8 -*-
 import serial
 import time
@@ -354,4 +360,3 @@ if __name__ == "__main__":
     __lenFmt8 = 3
     print time.asctime()
     main()
-
