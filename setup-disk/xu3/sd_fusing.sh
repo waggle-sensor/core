@@ -1,3 +1,7 @@
+# ANL:contrib-license
+#  This file was modified by the Waggle Project. The original license
+#  remains. Copyright UChicago and Argonne Natl Laboratory.
+# ANL:contrib-license
 #
 # Copyright (C) 2013 Samsung Electronics Co., Ltd.
 #              http://www.samsung.com/
