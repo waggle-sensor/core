@@ -15,6 +15,7 @@ This repo contains software and tools common to both the node controller and edg
 ## Setup
 
 Dependencies and services are installed and configured by running:
-```
+
+```sh
 ./configure
 ```
