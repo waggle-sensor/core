@@ -10,6 +10,7 @@ This repo contains software and tools common to both the node controller and edg
 * Managing deployment state.
 * Controlling plugins.
 * Heartbeating
+* Media recovery.
 
 ## Setup
 
