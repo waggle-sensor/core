@@ -18,6 +18,7 @@ Dependencies and services are installed and configured by running:
 
 ```sh
 mkdir -p /usr/lib/waggle
+cd /usr/lib/waggle
 git clone https://github.com/waggle-sensor/core
 cd core
 ./configure
