@@ -66,7 +66,13 @@ def get_wagman_metrics(metrics):
     with suppress(Exception):
         metrics['wagman', 'uptime'] = int(subprocess.check_output(['wagman-client', 'up']).decode())
 
-    log = subprocess.check_output(['journalctl', '-b', '-o', 'cat', '-u', 'waggle-wagman-driver', '--since', '-90']).decode()
+    log = subprocess.check_output([
+        'journalctl',                   # scan journal for
+        '-u', 'waggle-wagman-driver',   # wagman driver logs
+        '--since', '-90',               # from last 90s
+        '-b',                           # from this boot only
+        '-o', 'cat',                    # in compact form
+    ]).decode()
 
     with suppress(Exception):
         nc, ep, cs = re.findall(r':fails (\d+) (\d+) (\d+)', log)[-1]
