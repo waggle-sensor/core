@@ -131,9 +131,9 @@ def get_nc_metrics(metrics):
 
 
 def get_ep_metrics(metrics):
-    metrics['ep_bcam_uptime'] = get_dev_uptime('/dev/waggle_cam_bottom')
-    metrics['ep_tcam_uptime'] = get_dev_uptime('/dev/waggle_cam_top')
-    metrics['ep_mic_uptime'] = get_dev_uptime('/dev/waggle_microphone')
+    metrics['ep', 'bcam', 'uptime'] = get_dev_uptime('/dev/waggle_cam_bottom')
+    metrics['ep', 'tcam', 'uptime'] = get_dev_uptime('/dev/waggle_cam_top')
+    metrics['ep', 'mic', 'uptime'] = get_dev_uptime('/dev/waggle_microphone')
 
 
 def get_metrics():
