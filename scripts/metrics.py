@@ -5,6 +5,7 @@ import time
 from contextlib import suppress
 from glob import glob
 import logging
+import json
 
 
 logger = logging.getLogger('metrics')
@@ -16,32 +17,15 @@ def read_file(path):
         return file.read()
 
 
-def get_platform():
-    s = read_file('/proc/cpuinfo')
-    if 'ODROIDC' in s:
-        return 'nc'
-    if 'ODROID-XU' in s:
-        return 'ep'
-    return 'unknown'
+def read_config_file(path):
+    logger.debug('reading config %s', path)
+    with open(path) as file:
+        return json.load(file)
 
 
 def get_sys_uptime():
     fields = read_file('/proc/uptime').split()
     return int(float(fields[0]))
-
-
-def get_dev_uptime(path):
-    try:
-        return int(time.time() - os.path.getctime(path))
-    except FileNotFoundError:
-        return 0
-
-
-def get_dev_timestamp(path):
-    try:
-        return int(os.path.getctime(path))
-    except FileNotFoundError:
-        return 0
 
 
 def get_dev_exists(path):
@@ -68,7 +52,7 @@ def get_service_status(service):
 
 # can also have a log tail process watching all the wagman logs for events
 
-def get_wagman_metrics(metrics):
+def get_wagman_metrics(config, metrics):
     # optimization... doesn't bother with query if device missing.
     if not get_dev_exists('/dev/waggle_sysmon'):
         return
@@ -143,14 +127,6 @@ def get_wagman_metrics(metrics):
     # print(re.findall(r'wagman:(\S+) starting (\S+)', log))
     # print(re.findall(r'wagman:(\S+) killing', log))
 
-def get_common_metrics(metrics):
-    metrics['uptime'] = get_sys_uptime()
-    metrics['time'] = int(time.time())
-    metrics['running', 'rabbitmq'] = get_service_status('rabbitmq-server')
-    rx, tx = get_net_metrics('eth0')
-    metrics['net_lan', 'rx'] = rx
-    metrics['net_lan', 'tx'] = tx
-
 
 def check_ping(host):
     try:
@@ -159,54 +135,93 @@ def check_ping(host):
     except Exception:
         return False
 
-# should have a generic query interface and be able to just multi req against it.
-
-def get_nc_metrics(metrics):
-    metrics['ping_ep', 'up'] = int(check_ping('10.31.81.51'))
-    metrics['ping_beehive', 'up'] = int(check_ping('beehive'))
-
-    metrics['dev_wagman', 'up'] = get_dev_exists('/dev/waggle_sysmon')
-    metrics['dev_coresense', 'up'] = get_dev_exists('/dev/waggle_coresense')
-    metrics['dev_modem', 'up'] = get_dev_exists('/dev/attwwan')
-    metrics['dev_wwan', 'up'] = get_dev_exists('/sys/class/net/ppp0')
-    metrics['dev_lan', 'up'] = get_dev_exists('/sys/class/net/eth0')
-    metrics['dev_mic', 'up'] = get_dev_exists('/dev/waggle_microphone')
-    metrics['dev_samba', 'up'] = get_dev_exists('/dev/serial/by-id/usb-03eb_6124-if00')
-
-    rx, tx = get_net_metrics('ppp0')
-    metrics['net_wwan', 'rx'] = rx
-    metrics['net_wwan', 'tx'] = tx
-
-    get_wagman_metrics(metrics)
-
+def get_sys_metrics(config, metrics):
+    metrics['uptime'] = get_sys_uptime()
+    metrics['time'] = int(time.time())
+    metrics['running', 'rabbitmq'] = get_service_status('rabbitmq-server')
     metrics['running', 'coresense'] = get_service_status('waggle-plugin-coresense')
 
 
-def get_ep_metrics(metrics):
-    metrics['dev_bcam', 'up'] = get_dev_exists('/dev/waggle_cam_bottom')
-    metrics['dev_tcam', 'up'] = get_dev_exists('/dev/waggle_cam_top')
-    metrics['dev_mic', 'up'] = get_dev_exists('/dev/waggle_microphone')
-    metrics['ping_nc', 'up'] = check_ping('10.31.81.10')
+devices = {
+    'wagman': '/dev/waggle_sysmon',
+    'coresense': '/dev/waggle_coresense',
+    'modem': '/dev/attwwan',
+    'wwan': '/sys/class/net/ppp0',
+    'lan': '/sys/class/net/eth0',
+    'mic': '/dev/waggle_microphone',
+    'samba': '/dev/serial/by-id/usb-03eb_6124-if00',
+    'bcam': '/dev/waggle_cam_bottom',
+    'tcam': '/dev/waggle_cam_top',
+}
 
 
-def get_metrics():
+def get_device_metrics(config, metrics):
+    for device in config['devices']:
+        try:
+            path = devices[device]
+        except KeyError:
+            logger.warning('no device "%s"', device)
+            continue
+
+        metrics['dev_' + device, 'up'] = get_dev_exists(path)
+
+
+hosts = {
+    'beehive': 'beehive',
+    'nc': '10.31.81.10',
+    'ep': '10.31.81.51',
+}
+
+
+def get_ping_metrics(config, metrics):
+    for name in config.get('ping', []):
+        try:
+            host = hosts[name]
+        except KeyError:
+            logger.warning('no ping host "%s"', name)
+            continue
+
+        metrics['ping_' + name, 'up'] = check_ping(host)
+
+
+ifaces = {
+    'wwan': 'ppp0',
+    'lan': 'eth0',
+}
+
+
+def get_network_metrics(config, metrics):
+    for name in config.get('network', []):
+        try:
+            iface = ifaces[name]
+            logger.warning('no network interface "%s"', iface)
+        except KeyError:
+            continue
+
+        rx, tx = get_net_metrics(iface)
+        metrics['net_' + name, 'rx'] = rx
+        metrics['net_' + name, 'tx'] = tx
+
+
+def get_metrics_for_config(config):
     metrics = {}
 
-    get_common_metrics(metrics)
+    get_sys_metrics(config, metrics)
+    get_device_metrics(config, metrics)
 
-    platform = get_platform()
+    if 'wagman' in config.get('devices', []):
+        get_wagman_metrics(config, metrics)
 
-    if platform == 'nc':
-        get_nc_metrics(metrics)
-    if platform == 'ep':
-        get_ep_metrics(metrics)
+    get_ping_metrics(config, metrics)
+    get_network_metrics(config, metrics)
 
     return metrics
 
 
 def main():
     import pprint
-    pprint.pprint(get_metrics())
+    config = read_config_file('/wagglerw/metrics.json')
+    pprint.pprint(get_metrics_for_config(config))
 
 
 if __name__ == '__main__':
