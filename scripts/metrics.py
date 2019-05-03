@@ -165,7 +165,7 @@ def get_sys_metrics(config, metrics):
     metrics['loadavg15'] = float(fs[2])
 
 
-devices = {
+device_table = {
     'wagman': '/dev/waggle_sysmon',
     'coresense': '/dev/waggle_coresense',
     'modem': '/dev/attwwan',
@@ -179,17 +179,15 @@ devices = {
 
 
 def get_device_metrics(config, metrics):
-    for device in config['devices']:
-        try:
-            path = devices[device]
-        except KeyError:
-            logger.warning('no device "%s"', device)
+    for name in config['devices']:
+        if name not in device_table:
+            logger.warning('no device "%s"', name)
             continue
 
-        metrics['dev_' + device, 'up'] = get_dev_exists(path)
+        metrics['dev_' + name, 'up'] = get_dev_exists(device_table[name])
 
 
-hosts = {
+ping_table = {
     'beehive': 'beehive',
     'nc': '10.31.81.10',
     'ep': '10.31.81.51',
@@ -198,16 +196,14 @@ hosts = {
 
 def get_ping_metrics(config, metrics):
     for name in config['ping']:
-        try:
-            host = hosts[name]
-        except KeyError:
+        if name not in ping_table:
             logger.warning('no ping host "%s"', name)
             continue
 
-        metrics['ping_' + name, 'up'] = check_ping(host)
+        metrics['ping_' + name, 'up'] = check_ping(ping_table[name])
 
 
-ifaces = {
+network_table = {
     'wwan': 'ppp0',
     'lan': 'eth0',
 }
@@ -215,13 +211,11 @@ ifaces = {
 
 def get_network_metrics(config, metrics):
     for name in config['network']:
-        try:
-            iface = ifaces[name]
-            logger.warning('no network interface "%s"', iface)
-        except KeyError:
+        if name not in network_table:
+            logger.warning('no network interface "%s"', name)
             continue
 
-        rx, tx = get_net_metrics(iface)
+        rx, tx = get_net_metrics(network_table[name])
         metrics['net_' + name, 'rx'] = rx
         metrics['net_' + name, 'tx'] = tx
 
@@ -233,13 +227,11 @@ service_table = {
 
 def get_service_metrics(config, metrics):
     for name in config['services']:
-        try:
-            service = service_table[name]
-            logger.warning('no service "%s"', service)
-        except KeyError:
+        if name not in service_table:
+            logger.warning('no service "%s"', name)
             continue
 
-        metrics['running', name] = get_service_status(service)
+        metrics['running', name] = get_service_status(service_table[name])
 
 
 def get_metrics_for_config(config):
