@@ -88,35 +88,35 @@ def get_wagman_metrics(metrics):
 
     with suppress(Exception):
         nc, ep, cs = re.findall(r':fails (\d+) (\d+) (\d+)', log)[-1]
-        metrics['wagman', 'fc', 'nc'] = int(nc)
-        metrics['wagman', 'fc', 'ep'] = int(ep)
-        metrics['wagman', 'fc', 'cs'] = int(cs)
+        metrics['wagman_fc', 'nc'] = int(nc)
+        metrics['wagman_fc', 'ep'] = int(ep)
+        metrics['wagman_fc', 'cs'] = int(cs)
 
     with suppress(Exception):
         wm, nc, ep, cs = re.findall(r':cu (\d+) (\d+) (\d+) (\d+)', log)[-1]
-        metrics['wagman', 'cu', 'wm'] = int(wm)
-        metrics['wagman', 'cu', 'nc'] = int(nc)
-        metrics['wagman', 'cu', 'ep'] = int(ep)
-        metrics['wagman', 'cu', 'cs'] = int(cs)
+        metrics['wagman_cu', 'wm'] = int(wm)
+        metrics['wagman_cu', 'nc'] = int(nc)
+        metrics['wagman_cu', 'ep'] = int(ep)
+        metrics['wagman_cu', 'cs'] = int(cs)
 
     with suppress(Exception):
         nc, ep, cs = re.findall(r':enabled (\d+) (\d+) (\d+)', log)[-1]
-        metrics['wagman', 'enabled', 'nc'] = bool(nc)
-        metrics['wagman', 'enabled', 'ep'] = bool(ep)
-        metrics['wagman', 'enabled', 'cs'] = bool(cs)
+        metrics['wagman_enabled', 'nc'] = bool(nc)
+        metrics['wagman_enabled', 'ep'] = bool(ep)
+        metrics['wagman_enabled', 'cs'] = bool(cs)
 
     with suppress(Exception):
         ports = re.findall(r':vdc (\d+) (\d+) (\d+) (\d+) (\d+)', log)[-1]
-        metrics['wagman', 'vdc', '0'] = int(ports[0])
-        metrics['wagman', 'vdc', '1'] = int(ports[1])
-        metrics['wagman', 'vdc', '2'] = int(ports[2])
-        metrics['wagman', 'vdc', '3'] = int(ports[3])
-        metrics['wagman', 'vdc', '4'] = int(ports[4])
+        metrics['wagman_vdc', '0'] = int(ports[0])
+        metrics['wagman_vdc', '1'] = int(ports[1])
+        metrics['wagman_vdc', '2'] = int(ports[2])
+        metrics['wagman_vdc', '3'] = int(ports[3])
+        metrics['wagman_vdc', '4'] = int(ports[4])
 
     with suppress(Exception):
-        metrics['wagman', 'hb', 'nc'] = 'nc heartbeat' in log
-        metrics['wagman', 'hb', 'ep'] = 'gn heartbeat' in log
-        metrics['wagman', 'hb', 'cs'] = 'cs heartbeat' in log
+        metrics['wagman_hb', 'nc'] = 'nc heartbeat' in log
+        metrics['wagman_hb', 'ep'] = 'gn heartbeat' in log
+        metrics['wagman_hb', 'cs'] = 'cs heartbeat' in log
 
     log = subprocess.check_output([
         'journalctl',                   # scan journal for
@@ -127,17 +127,17 @@ def get_wagman_metrics(metrics):
 
     # maybe we just schedule this service to manage its own sleep / monitoring timer
     # this would actually allow events to be integrated reasonably.
-    metrics['wagman', 'stopping', 'nc'] = re.search(r'wagman:nc stopping', log) is not None
-    metrics['wagman', 'stopping', 'ep'] = re.search(r'wagman:gn stopping', log) is not None
-    metrics['wagman', 'stopping', 'cs'] = re.search(r'wagman:cs stopping', log) is not None
+    metrics['wagman_stopping', 'nc'] = re.search(r'wagman:nc stopping', log) is not None
+    metrics['wagman_stopping', 'ep'] = re.search(r'wagman:gn stopping', log) is not None
+    metrics['wagman_stopping', 'cs'] = re.search(r'wagman:cs stopping', log) is not None
 
-    metrics['wagman', 'starting', 'nc'] = re.search(r'wagman:nc starting', log) is not None
-    metrics['wagman', 'starting', 'ep'] = re.search(r'wagman:gn starting', log) is not None
-    metrics['wagman', 'starting', 'cs'] = re.search(r'wagman:cs starting', log) is not None
+    metrics['wagman_starting', 'nc'] = re.search(r'wagman:nc starting', log) is not None
+    metrics['wagman_starting', 'ep'] = re.search(r'wagman:gn starting', log) is not None
+    metrics['wagman_starting', 'cs'] = re.search(r'wagman:cs starting', log) is not None
 
-    metrics['wagman', 'killing', 'nc'] = re.search(r'wagman:nc killing', log) is not None
-    metrics['wagman', 'killing', 'ep'] = re.search(r'wagman:gn killing', log) is not None
-    metrics['wagman', 'killing', 'cs'] = re.search(r'wagman:cs killing', log) is not None
+    metrics['wagman_killing', 'nc'] = re.search(r'wagman:nc killing', log) is not None
+    metrics['wagman_killing', 'ep'] = re.search(r'wagman:gn killing', log) is not None
+    metrics['wagman_killing', 'cs'] = re.search(r'wagman:cs killing', log) is not None
 
     # print(re.findall(r'wagman:(\S+) stopping (\S+)', log))
     # print(re.findall(r'wagman:(\S+) starting (\S+)', log))
@@ -145,13 +145,11 @@ def get_wagman_metrics(metrics):
 
 def get_common_metrics(metrics):
     metrics['uptime'] = get_sys_uptime()
-
-    metrics['platform'] = get_platform()
+    metrics['time'] = int(time.time())
     metrics['running', 'rabbitmq'] = get_service_status('rabbitmq-server')
-
     rx, tx = get_net_metrics('eth0')
-    metrics['net', 'lan', 'rx'] = rx
-    metrics['net', 'lan', 'tx'] = tx
+    metrics['net_lan', 'rx'] = rx
+    metrics['net_lan', 'tx'] = tx
 
 
 def check_ping(host):
@@ -164,20 +162,20 @@ def check_ping(host):
 # should have a generic query interface and be able to just multi req against it.
 
 def get_nc_metrics(metrics):
-    metrics['nc', 'ping_ep'] = int(check_ping('10.31.81.51'))
-    metrics['nc', 'ping_beehive'] = int(check_ping('beehive'))
+    metrics['ping_ep', 'up'] = int(check_ping('10.31.81.51'))
+    metrics['ping_beehive', 'up'] = int(check_ping('beehive'))
 
-    metrics['nc', 'wagman', 'up'] = get_dev_exists('/dev/waggle_sysmon')
-    metrics['nc', 'coresense', 'up'] = get_dev_exists('/dev/waggle_coresense')
-    metrics['nc', 'modem', 'up'] = get_dev_exists('/dev/attwwan')
-    metrics['nc', 'wwan', 'up'] = get_dev_exists('/sys/class/net/ppp0')
-    metrics['nc', 'lan', 'up'] = get_dev_exists('/sys/class/net/eth0')
-    metrics['nc', 'mic', 'up'] = get_dev_exists('/dev/waggle_microphone')
-    metrics['nc', 'samba', 'up'] = get_dev_exists('/dev/serial/by-id/usb-03eb_6124-if00')
+    metrics['dev_wagman', 'up'] = get_dev_exists('/dev/waggle_sysmon')
+    metrics['dev_coresense', 'up'] = get_dev_exists('/dev/waggle_coresense')
+    metrics['dev_modem', 'up'] = get_dev_exists('/dev/attwwan')
+    metrics['dev_wwan', 'up'] = get_dev_exists('/sys/class/net/ppp0')
+    metrics['dev_lan', 'up'] = get_dev_exists('/sys/class/net/eth0')
+    metrics['dev_mic', 'up'] = get_dev_exists('/dev/waggle_microphone')
+    metrics['dev_samba', 'up'] = get_dev_exists('/dev/serial/by-id/usb-03eb_6124-if00')
 
     rx, tx = get_net_metrics('ppp0')
-    metrics['net', 'wwan', 'rx'] = rx
-    metrics['net', 'wwan', 'tx'] = tx
+    metrics['net_wwan', 'rx'] = rx
+    metrics['net_wwan', 'tx'] = tx
 
     get_wagman_metrics(metrics)
 
@@ -185,10 +183,10 @@ def get_nc_metrics(metrics):
 
 
 def get_ep_metrics(metrics):
-    metrics['ep', 'bcam', 'up'] = get_dev_exists('/dev/waggle_cam_bottom')
-    metrics['ep', 'tcam', 'up'] = get_dev_exists('/dev/waggle_cam_top')
-    metrics['ep', 'mic', 'up'] = get_dev_exists('/dev/waggle_microphone')
-    metrics['ep', 'ping_nc'] = check_ping('10.31.81.10')
+    metrics['dev_bcam', 'up'] = get_dev_exists('/dev/waggle_cam_bottom')
+    metrics['dev_tcam', 'up'] = get_dev_exists('/dev/waggle_cam_top')
+    metrics['dev_mic', 'up'] = get_dev_exists('/dev/waggle_microphone')
+    metrics['ping_nc', 'up'] = check_ping('10.31.81.10')
 
 
 def get_metrics():
@@ -196,9 +194,11 @@ def get_metrics():
 
     get_common_metrics(metrics)
 
-    if metrics['platform'] == 'nc':
+    platform = get_platform()
+
+    if platform == 'nc':
         get_nc_metrics(metrics)
-    if metrics['platform'] == 'ep':
+    if platform == 'ep':
         get_ep_metrics(metrics)
 
     return metrics
