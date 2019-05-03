@@ -34,6 +34,7 @@ def read_config_file(path):
         'devices': read_section_keys(config, 'devices'),
         'network': read_section_keys(config, 'network'),
         'ping': read_section_keys(config, 'ping'),
+        'services': read_section_keys(config, 'services'),
     }
 
 
@@ -152,8 +153,16 @@ def check_ping(host):
 def get_sys_metrics(config, metrics):
     metrics['uptime'] = get_sys_uptime()
     metrics['time'] = int(time.time())
-    metrics['running', 'rabbitmq'] = get_service_status('rabbitmq-server')
-    metrics['running', 'coresense'] = get_service_status('waggle-plugin-coresense')
+
+    s = read_file('/proc/meminfo')
+    metrics['mem_total'] = int(re.search(r'MemTotal:\s*(\d+)\s*kB', s).group(1)) * 1024
+    metrics['mem_free'] = int(re.search(r'MemFree:\s*(\d+)\s*kB', s).group(1)) * 1024
+
+    s = read_file('/proc/loadavg')
+    fs = s.split()
+    metrics['loadavg1'] = float(fs[0])
+    metrics['loadavg5'] = float(fs[1])
+    metrics['loadavg15'] = float(fs[2])
 
 
 devices = {
@@ -188,7 +197,7 @@ hosts = {
 
 
 def get_ping_metrics(config, metrics):
-    for name in config.get('ping', []):
+    for name in config['ping']:
         try:
             host = hosts[name]
         except KeyError:
@@ -217,6 +226,22 @@ def get_network_metrics(config, metrics):
         metrics['net_' + name, 'tx'] = tx
 
 
+service_table = {
+    'rabbitmq': 'rabbitmq-server',
+    'coresense': 'waggle-plugin-coresense',
+}
+
+def get_service_metrics(config, metrics):
+    for name in config['services']:
+        try:
+            service = service_table[name]
+            logger.warning('no service "%s"', service)
+        except KeyError:
+            continue
+
+        metrics['running', name] = get_service_status(service)
+
+
 def get_metrics_for_config(config):
     metrics = {}
 
@@ -228,6 +253,7 @@ def get_metrics_for_config(config):
 
     get_ping_metrics(config, metrics)
     get_network_metrics(config, metrics)
+    get_service_metrics(config, metrics)
 
     return metrics
 
