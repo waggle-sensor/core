@@ -118,12 +118,36 @@ def get_wagman_metrics(metrics):
         metrics['wagman', 'hb', 'ep'] = 'gn heartbeat' in log
         metrics['wagman', 'hb', 'cs'] = 'cs heartbeat' in log
 
+    log = subprocess.check_output([
+        'journalctl',                   # scan journal for
+        '-u', 'waggle-wagman-driver',   # wagman driver logs
+        '--since', '-300',               # from last 5m
+        '-b',                           # from this boot only
+    ]).decode()
+
+    # maybe we just schedule this service to manage its own sleep / monitoring timer
+    # this would actually allow events to be integrated reasonably.
+    metrics['wagman', 'stopping', 'nc'] = re.search(r'wagman:nc stopping', log) is not None
+    metrics['wagman', 'stopping', 'ep'] = re.search(r'wagman:gn stopping', log) is not None
+    metrics['wagman', 'stopping', 'cs'] = re.search(r'wagman:cs stopping', log) is not None
+
+    metrics['wagman', 'starting', 'nc'] = re.search(r'wagman:nc starting', log) is not None
+    metrics['wagman', 'starting', 'ep'] = re.search(r'wagman:gn starting', log) is not None
+    metrics['wagman', 'starting', 'cs'] = re.search(r'wagman:cs starting', log) is not None
+
+    metrics['wagman', 'killing', 'nc'] = re.search(r'wagman:nc killing', log) is not None
+    metrics['wagman', 'killing', 'ep'] = re.search(r'wagman:gn killing', log) is not None
+    metrics['wagman', 'killing', 'cs'] = re.search(r'wagman:cs killing', log) is not None
+
+    # print(re.findall(r'wagman:(\S+) stopping (\S+)', log))
+    # print(re.findall(r'wagman:(\S+) starting (\S+)', log))
+    # print(re.findall(r'wagman:(\S+) killing', log))
 
 def get_common_metrics(metrics):
     metrics['uptime'] = get_sys_uptime()
 
     metrics['platform'] = get_platform()
-    metrics['running', 'rabbitmq'] = int(get_service_status('rabbitmq-server'))
+    metrics['running', 'rabbitmq'] = get_service_status('rabbitmq-server')
 
     rx, tx = get_net_metrics('eth0')
     metrics['net', 'lan', 'rx'] = rx
