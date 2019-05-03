@@ -5,7 +5,7 @@ import time
 from contextlib import suppress
 from glob import glob
 import logging
-import json
+import configparser
 
 
 logger = logging.getLogger('metrics')
@@ -17,10 +17,24 @@ def read_file(path):
         return file.read()
 
 
+def read_section_keys(config, section):
+    try:
+        return list(config[section])
+    except KeyError:
+        return []
+
+
 def read_config_file(path):
     logger.debug('reading config %s', path)
-    with open(path) as file:
-        return json.load(file)
+
+    config = configparser.ConfigParser(allow_no_value=True)
+    config.read(path)
+
+    return {
+        'devices': read_section_keys(config, 'devices'),
+        'network': read_section_keys(config, 'network'),
+        'ping': read_section_keys(config, 'ping'),
+    }
 
 
 def get_sys_uptime():
@@ -191,7 +205,7 @@ ifaces = {
 
 
 def get_network_metrics(config, metrics):
-    for name in config.get('network', []):
+    for name in config['network']:
         try:
             iface = ifaces[name]
             logger.warning('no network interface "%s"', iface)
@@ -209,7 +223,7 @@ def get_metrics_for_config(config):
     get_sys_metrics(config, metrics)
     get_device_metrics(config, metrics)
 
-    if 'wagman' in config.get('devices', []):
+    if 'wagman' in config['devices']:
         get_wagman_metrics(config, metrics)
 
     get_ping_metrics(config, metrics)
@@ -220,7 +234,7 @@ def get_metrics_for_config(config):
 
 def main():
     import pprint
-    config = read_config_file('/wagglerw/metrics.json')
+    config = read_config_file('/wagglerw/metrics.config')
     pprint.pprint(get_metrics_for_config(config))
 
 
