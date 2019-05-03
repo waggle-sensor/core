@@ -4,9 +4,14 @@ import re
 import time
 from contextlib import suppress
 from glob import glob
+import logging
+
+
+logger = logging.getLogger('metrics')
 
 
 def read_file(path):
+    logger.debug('read_file %s', path)
     with open(path) as file:
         return file.read()
 
@@ -39,6 +44,10 @@ def get_dev_timestamp(path):
         return 0
 
 
+def get_dev_exists(path):
+    return os.path.exists(path)
+
+
 def get_net_metrics(iface):
     try:
         rx = int(read_file(os.path.join('/sys/class/net', iface, 'statistics/rx_bytes')))
@@ -52,15 +61,16 @@ def get_net_metrics(iface):
 def get_service_status(service):
     try:
         subprocess.check_output(['systemctl', 'is-active', service]).decode()
-        active = True
+        return True
     except subprocess.CalledProcessError:
-        active = False
-    return int(active)
+        return False
 
+
+# can also have a log tail process watching all the wagman logs for events
 
 def get_wagman_metrics(metrics):
     # optimization... doesn't bother with query if device missing.
-    if get_dev_uptime('/dev/waggle_sysmon') == 0:
+    if not get_dev_exists('/dev/waggle_sysmon'):
         return
 
     with suppress(Exception):
@@ -73,6 +83,8 @@ def get_wagman_metrics(metrics):
         '-b',                           # from this boot only
         '-o', 'cat',                    # in compact form
     ]).decode()
+
+    metrics['wagman', 'comm'] = ':wagman:' in log
 
     with suppress(Exception):
         nc, ep, cs = re.findall(r':fails (\d+) (\d+) (\d+)', log)[-1]
@@ -89,43 +101,55 @@ def get_wagman_metrics(metrics):
 
     with suppress(Exception):
         nc, ep, cs = re.findall(r':enabled (\d+) (\d+) (\d+)', log)[-1]
-        metrics['wagman', 'enabled', 'nc'] = int(nc)
-        metrics['wagman', 'enabled', 'ep'] = int(ep)
-        metrics['wagman', 'enabled', 'cs'] = int(cs)
+        metrics['wagman', 'enabled', 'nc'] = bool(nc)
+        metrics['wagman', 'enabled', 'ep'] = bool(ep)
+        metrics['wagman', 'enabled', 'cs'] = bool(cs)
 
     with suppress(Exception):
-        metrics['wagman', 'hb', 'nc'] = int('nc heartbeat' in log)
-        metrics['wagman', 'hb', 'ep'] = int('gn heartbeat' in log)
-        metrics['wagman', 'hb', 'cs'] = int('cs heartbeat' in log)
+        ports = re.findall(r':vdc (\d+) (\d+) (\d+) (\d+) (\d+)', log)[-1]
+        metrics['wagman', 'vdc', '0'] = int(ports[0])
+        metrics['wagman', 'vdc', '1'] = int(ports[1])
+        metrics['wagman', 'vdc', '2'] = int(ports[2])
+        metrics['wagman', 'vdc', '3'] = int(ports[3])
+        metrics['wagman', 'vdc', '4'] = int(ports[4])
+
+    with suppress(Exception):
+        metrics['wagman', 'hb', 'nc'] = 'nc heartbeat' in log
+        metrics['wagman', 'hb', 'ep'] = 'gn heartbeat' in log
+        metrics['wagman', 'hb', 'cs'] = 'cs heartbeat' in log
 
 
 def get_common_metrics(metrics):
     metrics['uptime'] = get_sys_uptime()
 
     metrics['platform'] = get_platform()
-    metrics['running', 'rabbitmq'] = get_service_status('rabbitmq-server')
+    metrics['running', 'rabbitmq'] = int(get_service_status('rabbitmq-server'))
 
     rx, tx = get_net_metrics('eth0')
     metrics['net', 'lan', 'rx'] = rx
     metrics['net', 'lan', 'tx'] = tx
 
 
+def check_ping(host):
+    try:
+        subprocess.check_output(['ping', '-c', '4', host])
+        return True
+    except Exception:
+        return False
+
+# should have a generic query interface and be able to just multi req against it.
+
 def get_nc_metrics(metrics):
-    metrics['nc', 'wagman', 'uptime'] = get_dev_uptime('/dev/waggle_sysmon')
+    metrics['nc', 'ping_ep'] = int(check_ping('10.31.81.51'))
+    metrics['nc', 'ping_beehive'] = int(check_ping('beehive'))
 
-    cspath = (glob('/dev/serial/by-id/*Due*')
-                or ['/dev/serial/by-id/usb-Arduino_LLC_Arduino_Due-if00'])[0]
-    metrics['nc', 'coresense', 'uptime'] = get_dev_uptime(cspath)
-
-    metrics['nc', 'modem', 'uptime'] = get_dev_uptime('/dev/attwwan')
-
-    # TODO split expected files into config file.
-    # metrics['nc', 'wwan', 'uptime'] = get_dev_timestamp('/sys/class/net/ppp0')
-    # metrics['nc', 'lan', 'uptime'] = get_dev_timestamp('/sys/class/net/eth0')
-    metrics['nc', 'wwan', 'uptime'] = get_dev_uptime('/sys/class/net/ppp0')
-    metrics['nc', 'lan', 'uptime'] = get_dev_uptime('/sys/class/net/eth0')
-    metrics['nc', 'mic', 'uptime'] = get_dev_uptime('/dev/waggle_microphone')
-    metrics['nc', 'samba', 'uptime'] = get_dev_uptime('/dev/serial/by-id/usb-03eb_6124-if00')
+    metrics['nc', 'wagman', 'up'] = get_dev_exists('/dev/waggle_sysmon')
+    metrics['nc', 'coresense', 'up'] = get_dev_exists('/dev/waggle_coresense')
+    metrics['nc', 'modem', 'up'] = get_dev_exists('/dev/attwwan')
+    metrics['nc', 'wwan', 'up'] = get_dev_exists('/sys/class/net/ppp0')
+    metrics['nc', 'lan', 'up'] = get_dev_exists('/sys/class/net/eth0')
+    metrics['nc', 'mic', 'up'] = get_dev_exists('/dev/waggle_microphone')
+    metrics['nc', 'samba', 'up'] = get_dev_exists('/dev/serial/by-id/usb-03eb_6124-if00')
 
     rx, tx = get_net_metrics('ppp0')
     metrics['net', 'wwan', 'rx'] = rx
@@ -137,9 +161,10 @@ def get_nc_metrics(metrics):
 
 
 def get_ep_metrics(metrics):
-    metrics['ep', 'bcam', 'uptime'] = get_dev_uptime('/dev/waggle_cam_bottom')
-    metrics['ep', 'tcam', 'uptime'] = get_dev_uptime('/dev/waggle_cam_top')
-    metrics['ep', 'mic', 'uptime'] = get_dev_uptime('/dev/waggle_microphone')
+    metrics['ep', 'bcam', 'up'] = get_dev_exists('/dev/waggle_cam_bottom')
+    metrics['ep', 'tcam', 'up'] = get_dev_exists('/dev/waggle_cam_top')
+    metrics['ep', 'mic', 'up'] = get_dev_exists('/dev/waggle_microphone')
+    metrics['ep', 'ping_nc'] = check_ping('10.31.81.10')
 
 
 def get_metrics():
