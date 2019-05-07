@@ -17,11 +17,11 @@ System partition that mounts `/`. The size of the partition is about 8 GB (half 
 
 ## Writable Partition
 
-This writable partition takes the remaining storage capability (e.g., 8 GB out of 16 GB storage). The partition is mounted under `/wagglerw`. `/var` and `/srv` are linked to this partition (under `/wagglerw`) as those directories should remain writable by OS and software. Waggle plugin software codes, their configuration files, raw-to-intermediate data, used by Waggle services and plugins, etc are stored in this partition.
+This writable partition takes the remaining storage capability (e.g., 8 GB out of 16 GB storage, after 8 GB is taken by read-only partition). The partition is mounted under `/wagglerw`. `/var` and `/srv` are linked to this partition (under `/wagglerw`) as those directories should remain writable by OS and software. Waggle plugin software codes, their configuration files, raw-to-intermediate data, used by Waggle services and plugins, etc are stored in this partition.
 
 ## Instructions on Making The Read-only Partition in Waggle
 
-Pseudocode of the instructions is described below. The actual code block can be found in [waggle_init.sh](https://github.com/waggle-sensor/core/blob/master/scripts/waggle_init.sh#L344) (Line 344 through 503).
+Pseudocode of the instructions is described below. The actual code block can be found in [waggle_init.sh](https://github.com/waggle-sensor/core/blob/master/scripts/waggle_init.sh#L344) (Line 344 through 503). Each step is linked with the actual codes.
 
 1) [Make 3 partitions](https://github.com/waggle-sensor/core/blob/master/scripts/waggle_init.sh#L347)
 2) [Make bootloader](https://github.com/waggle-sensor/core/blob/master/scripts/waggle_init.sh#L353)
