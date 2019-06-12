@@ -69,22 +69,38 @@ systemctl disable systemd-timesyncd
 # Restrict SSH connections to local port bindings
 sed -i 's/^#ListenAddress ::$/ListenAddress 127.0.0.1/' /etc/ssh/sshd_config
 
-### username
-export odroid_exists=$(id -u odroid > /dev/null 2>&1; echo $?)
+### usernames
+uid_min=$(grep "^UID_MIN" /etc/login.defs)
+uid_max=$(grep "^UID_MAX" /etc/login.defs)
+if [ "${uid_min}x" == "x" ] ; then
+  uid_min="UID_MIN 1000"
+fi
+
+if [ "${uid_max}x" == "x" ] ; then
+  uid_max="UID_MAX 60000"
+fi
+
+users=$(awk -F':' -v "min=${uid_min##UID_MIN}" -v "max=${uid_max##UID_MAX}" '{ if ( $3 >= min && $3 <= max ) print $1}' /etc/passwd)
+echo 'Current users found: ' ${users}
+
+# We only consider the user appears first
+first_user=$(echo ${users} | cut -d ' ' -f 1)
+
+export odroid_exists=$(id -u $first_user > /dev/null 2>&1; echo $?)
 export waggle_exists=$(id -u waggle > /dev/null 2>&1; echo $?)
 
 # rename existing user odroid to waggle
 set +e
 if [ ${odroid_exists} == 0 ] && [ ${waggle_exists} != 0 ] ; then
-  echo "I will kill all processes of the user \"odroid\" now."
+  echo "I will kill all processes of the user \"${first_user}\" now."
   sleep 1
-  killall -u odroid -9
+  killall -u $first_user -9
   sleep 2
 
   set -e
 
   #This will change the user's login name. It requires you logged in as another user, e.g. root
-  usermod -l waggle odroid
+  usermod -l waggle $first_user
 
   # real name
   usermod -c "waggle user" waggle
@@ -121,14 +137,14 @@ fi
 
 
 # check if odroid group exists
-getent group odroid > /dev/null 2>&1
+getent group $first_user > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-  echo "\"odroid\" group exists, will rename it to \"waggle\""
-  groupmod -n waggle odroid || exit 1
+  echo "\"${first_user}\" group exists, will rename it to \"waggle\""
+  groupmod -n waggle $first_user || exit 1
 else
   getent group waggle > /dev/null 2>&1
   if [ $? -eq 0 ]; then
-    echo "Neither \"waggle\" nor \"odroid\" group exists. Will create \"waggle\" group."
+    echo "Neither \"waggle\" nor \"${first_user}\" group exists. Will create \"waggle\" group."
     addgroup waggle
   fi
 fi

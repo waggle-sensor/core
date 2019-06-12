@@ -20,6 +20,20 @@
 #
 # Source: http://odroid.com/dokuwiki/doku.php?id=en:c1_gpio_default#
 
+# Coral EDGE-TPU
+# Pin: 16 GPIO: 73
+# GND: 14 and 20
+#
+# Source: https://coral.withgoogle.com/docs/dev-board/gpio/
+
+# Jetson TX2 with Connect Orbitty Carrier
+# Pin: 7 GPIO: 388
+# GND: 19
+#
+# Source: http://www.connecttech.com/pdf/CTIM-ASG003_Manual.pdf
+
+
+
 TIME_LOW=1.0
 TIME_HIGH=1.0
 
@@ -82,6 +96,16 @@ if [ ${ODROID_MODEL}x == "XU3x" ] ; then
   GPIO_EXPORT=173
   PIN=4
   SERIAL=/dev/ttySAC0
+  stty -F $SERIAL 115200
+elif [ ${ODROID_MODEL}x == "ETPUx" ] ; then
+  GPIO_EXPORT=73
+  PIN=16
+  SERIAL=/dev/ttymxc0
+  stty -F $SERIAL 115200
+elif [ ${ODROID_MODEL}x == "TX2x" ] ; then
+  GPIO_EXPORT=388
+  PIN=7
+  SERIAL=/dev/ttyTHS2
   stty -F $SERIAL 115200
 elif [ ${ODROID_MODEL}x == "Cx" ] ; then
   GPIO_EXPORT=74
