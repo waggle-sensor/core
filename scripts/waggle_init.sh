@@ -149,28 +149,30 @@ setup_rabbitmq() {
 }
 
 assert_dependencies() {
-  #
-  # Test if other memory card actually exists
-  #
-  if [ ! -e ${OTHER_DISK_DEVICE} ] ; then
-    echo "other memory card not found."
+  if [ "${ODROID_MODEL}x" == "Cx" ] || [ "${ODROID_MODEL}x" == "XU3x" ] ; then
+    #
+    # Test if other memory card actually exists
+    #
+    if [ ! -e ${OTHER_DISK_DEVICE} ] ; then
+      echo "other memory card not found."
 
-    echo "Exit."
-    rm -f ${pidfile}
-    exit 0
-  else
-    echo "${OTHER_DISK_DEVICE_TYPE} memory card found"
-  fi
+      echo "Exit."
+      rm -f ${pidfile}
+      exit 0
+    else
+      echo "${OTHER_DISK_DEVICE_TYPE} memory card found"
+    fi
 
-  #
-  # mkdosfs needed to create vfat partition
-  #
-  if ! hash mkdosfs > /dev/null 2>&1 ; then
-    echo "mkdosfs not found (apt-get install -y dosfstools)"
-    rm -f ${pidfile}
-    exit 1
-  else
-    echo "found mkdosfs"
+    #
+    # mkdosfs needed to create vfat partition
+    #
+    if ! hash mkdosfs > /dev/null 2>&1 ; then
+      echo "mkdosfs not found (apt-get install -y dosfstools)"
+      rm -f ${pidfile}
+      exit 1
+    else
+      echo "found mkdosfs"
+    fi
   fi
 }
 
