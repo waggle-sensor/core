@@ -15,4 +15,4 @@ else
   rm -f /var/lib/rabbitmq/.erlang.cookie
 fi
 
-echo "Checking done
+echo "Checking done"
