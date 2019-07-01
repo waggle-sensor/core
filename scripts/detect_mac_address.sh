@@ -12,8 +12,10 @@ mac_string=""
 
 set +e
 # All Odroid MAC addresses (so far) have the organizational prefix 00:1e:06
-#mac_address=$(ip link | grep -e '00:1e:06' | awk '{print $2}')
-mac_address=$(ip addr show eth0 | grep ether | awk '{print $2}')
+mac_address=$(ip link | grep -e '00:1e:06' | awk '{print $2}')
+if [ "x$mac_address" == "x" ]; then
+  mac_address=$(ip addr show eth0 | grep ether | awk '{print $2}')
+fi
 if [ "x$mac_address" == "x" ]; then
   # Locally Administered Mac Addresses
   # TODO: look for any addresses in the following form:
