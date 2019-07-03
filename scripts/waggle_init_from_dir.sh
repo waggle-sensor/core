@@ -694,7 +694,7 @@ declare -r DEBUG_HOST=""
 # This file can be used by other services to avoid reboots
 # until the waggle-init service has finished performing
 # critical activities.
-declare -r INIT_FINISHED_FILE="/etc/waggle/init_finished"
+declare -r INIT_FINISHED_FILE="/wagglerw/init_finished"
 
 declare -r OTHER_DISK_P1=/media/otherp1
 declare -r OTHER_DISK_P2=/media/otherp2

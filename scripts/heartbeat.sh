@@ -132,7 +132,7 @@ set +x
 echo "Starting heartbeat (mode '${MODE}')..."
 
 should_heartbeat() {
-  if [[ ${ODROID_MODEL}x == "Cx" && ${MODE} == "wellness"  && -e /etc/waggle/init_finished ]] ; then
+  if [[ ${ODROID_MODEL}x == "Cx" && ${MODE} == "wellness"  && -e /wagglerw/init_finished ]] ; then
     CURRENT_TIME=`date +%s`
     ALIVE_TIME=`stat -c %Y ${ALIVE_FILE}`
     ALIVE_DURATION=`python -c "print(${CURRENT_TIME} - ${ALIVE_TIME})"`
