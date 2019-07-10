@@ -7,6 +7,7 @@
 # ANL:waggle-license
 export MODEL_REPORTED=$(cat /proc/cpuinfo | grep Hardware | grep -o "[^ ]*$")
 export ODROID_MODEL=""
+export WAGGLE_SERIAL=""
 
 # For Nvidia Jetson
 if [ "${MODEL_REPORTED}x" == "x" ] ; then
@@ -25,26 +26,34 @@ if [ "${MODEL_REPORTED}x" == "x" ] ; then
   exit 1
 fi
 
-
-if [ "${MODEL_REPORTED}x" == "ODROIDCx" ] ; then
-  ODROID_MODEL="C"
-elif [ "${MODEL_REPORTED}x" == "ODROID-XU3x" ] ; then
-  ODROID_MODEL="XU3"
-elif [ "${MODEL_REPORTED}x" == "ODROID-XU4x" ] ; then
-  ODROID_MODEL="XU3"
-elif [ "${MODEL_REPORTED}x" == "64x" ] ; then
-  ODROID_MODEL="TX1"
-elif [ "${MODEL_REPORTED}x" == "33x" ] ; then
-  ODROID_MODEL="NANO"
-elif [ "${MODEL_REPORTED}x" == "24x" ] ; then
-  ODROID_MODEL="TX2"
-elif [ "${MODEL_REPORTED}x" == "25x" ] ; then
-  ODROID_MODEL="XAVIER"
-elif [ "${MODEL_REPORTED}x" == "mendel-chefx" ] ; then
-  ODROID_MODEL="ETPU"
-else
-  echo "Model ${MODEL_REPORTED} unknown."
-  exit 1
-fi
+case ${MODEL_REPORTED} in
+  ODROIDC)
+    ODROID_MODEL="C"
+    WAGGLE_SERIAL="0000000000000000" ;;
+  ODROID-XU3)
+    ODROID_MODEL="XU3"
+    WAGGLE_SERIAL="0000000000000001" ;;
+  ODROID-XU4)
+    ODROID_MODEL="XU3"
+    WAGGLE_SERIAL="0000000000000001" ;;
+  24)
+    ODROID_MODEL="TX2"
+    WAGGLE_SERIAL="0000000000000002" ;;
+  33)
+    ODROID_MODEL="NANO"
+    WAGGLE_SERIAL="0000000000000003" ;;
+  25) ODROID_MODEL="XAVIER"
+    WAGGLE_SERIAL="0000000000000004" ;;
+  64) ODROID_MODEL="TX1"
+    WAGGLE_SERIAL="0000000000000005" ;;
+  mendel-chef)
+    ODROID_MODEL="ETPU"
+    WAGGLE_SERIAL="0000000000000005" ;;
+  *)
+    echo "Model ${MODEL_REPORTED} unknown."
+    exit 1
+    ;;
+esac
 
 echo "ODROID_MODEL=${ODROID_MODEL}"
+echo "WAGGLE_SERIAL=${WAGGLE_SERIAL}"

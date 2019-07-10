@@ -29,7 +29,7 @@ detect_system_info() {
   # Detect Odroid model
   #
   . /usr/lib/waggle/core/scripts/detect_odroid_model.sh
-  # returns ODROID_MODEL
+  # returns ODROID_MODEL, WAGGLE_SERIAL
 
 
   #
@@ -130,6 +130,17 @@ setup_system() {
   # create Node ID
   #
   /usr/lib/waggle/core/scripts/create_node_id.sh
+
+  #
+  # create Node model / serial
+  #
+  if [ "${ODROID_MODEL}x" != "x" ] ; then
+    mkdir -p /etc/waggle/
+    echo "saving odroid model in /etc/waggle/odroid_model"
+    echo ${ODROID_MODEL} > /etc/waggle/odroid_model
+    echo "saving waggle serial number in /etc/waggle/waggle_serial"
+    echo ${WAGGLE_SERIAL} > /etc/waggle/waggle_serial
+  fi
 }
 
 setup_rabbitmq() {
