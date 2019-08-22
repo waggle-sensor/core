@@ -89,15 +89,18 @@ clear_deadman_trigger() {
   rm /tmp/alive 2> /dev/null
 }
 
+# allow for ~4h without deadman trigger reset
+HBCOUNTER_INIT=14400
+
 run_wellness_mode() {
   echo "running in wellness mode"
 
-  hbcounter=3600
+  hbcounter=$HBCOUNTER_INIT
 
   while true; do  
     if clear_deadman_trigger; then
       echo "cleared deadman trigger"
-      hbcounter=3600
+      hbcounter=$HBCOUNTER_INIT
     fi
 
     echo "${hbcounter} heartbeats left"
