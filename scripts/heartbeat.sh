@@ -86,7 +86,7 @@ run_always_mode() {
 }
 
 clear_deadman_trigger() {
-  rm /tmp/alive 2> /dev/null
+  rm /run/waggle_deadman_trigger 2> /dev/null
 }
 
 # allow for ~4h without deadman trigger reset
