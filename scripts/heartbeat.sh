@@ -32,55 +32,87 @@
 #
 # Source: http://www.connecttech.com/pdf/CTIM-ASG003_Manual.pdf
 
-
-
-TIME_LOW=1.0
-TIME_HIGH=1.0
-
-pidfile='/var/run/waggle/heartbeat.pid'
-OWN_PID=$$
-
-if [ -e ${pidfile} ] ; then
-  oldpid=`cat ${pidfile}`
-
-  # delete process only if PID is different from ours (happens easily)
-  if [ "${oldpid}_" != "${OWN_PID}_"  ] ; then
-    echo "Kill other heartbeat process"
-    set +e
-    kill -9 ${oldpid}
-    set -e
-    sleep 2
-    rm -f ${pidfile}
+get_wagman_version() {
+  if grep -q -i v1 /wagglerw/waggle/wagman_version; then
+    echo v1
+  elif grep -q -i v2 /wagglerw/waggle/wagman_version; then
+    echo v2
   fi
-fi
+}
 
-mkdir -p /var/run/waggle/
-
-echo "${OWN_PID}" > /var/run/waggle/heartbeat.pid
-
-
-MODE='wellness'   # 'wellness' or 'always'
-modefile='/etc/waggle/hbmode'
-if [ -e ${modefile} ] ; then
-  modefile_text=$(cat ${modefile})
-  if [ $modefile_text == 'always' ]; then
-    MODE='always'
+get_hbmode() {
+  if grep -q -i wellness /etc/waggle/hbmode; then
+    echo wellness
+  else
+    echo always
   fi
-fi
+}
 
-########
+do_heartbeat_v1() {
+    echo "heartbeat - toggle pins"
+    echo 1 > /sys/class/gpio/gpio${GPIO_EXPORT}/value
+    sleep 1
+    echo 0  > /sys/class/gpio/gpio${GPIO_EXPORT}/value
+    sleep 1
+}
 
-echo ""
-echo ""
-echo "Starting heartbeat script...  "
-echo "TIME: "$(date +"%Y-%m-%d %H:%M" -u)
+do_heartbeat_v2() {
+    echo "heartbeat - ping serial"
+    echo hello > $SERIAL
+}
 
-echo ""
-echo "TIME_LOW  : ${TIME_LOW}"
-echo "TIME_HIGH : ${TIME_HIGH}"
+do_heartbeat() {
+  case "$WAGMAN_VERSION" in
+    v1)
+      do_heartbeat_v1
+      ;;
+    v2)
+      do_heartbeat_v2
+      ;;
+    *)
+      do_heartbeat_v1
+      do_heartbeat_v2
+      ;;
+  esac
+}
 
-ALIVE_FILE=/tmp/alive
-touch ${ALIVE_FILE}
+run_always_mode() {
+  echo "running in always mode"
+
+  while true; do
+    do_heartbeat
+    sleep 1
+  done
+}
+
+clear_deadman_trigger() {
+  rm /tmp/alive 2> /dev/null
+}
+
+run_wellness_mode() {
+  echo "running in wellness mode"
+
+  hbcounter=3600
+
+  while true; do  
+    if clear_deadman_trigger; then
+      echo "cleared deadman trigger"
+      hbcounter=3600
+    fi
+
+    echo "${hbcounter} heartbeats left"
+
+    if [ $hbcounter -gt 0 ]; then
+      let hbcounter-=1
+      do_heartbeat
+    fi
+    
+    sleep 1
+  done
+}
+
+WAGMAN_VERSION=$(get_wagman_version)
+echo wagman version $WAGMAN_VERSION
 
 # Detect Odroid model
 . /usr/lib/waggle/core/scripts/detect_odroid_model.sh
@@ -91,7 +123,6 @@ if [ ${ODROID_MODEL}x == "x" ] ; then
 fi
 
 # TODO detect which model wagman we have
-
 if [ ${ODROID_MODEL}x == "XU3x" ] ; then
   GPIO_EXPORT=173
   PIN=4
@@ -129,64 +160,15 @@ set -x
 echo "out" > /sys/class/gpio/gpio${GPIO_EXPORT}/direction
 set +x
 
-echo "Starting heartbeat (mode '${MODE}')..."
-
-should_heartbeat() {
-  if [[ ${ODROID_MODEL}x == "Cx" && ${MODE} == "wellness"  && -e /wagglerw/init_finished ]] ; then
-    CURRENT_TIME=`date +%s`
-    ALIVE_TIME=`stat -c %Y ${ALIVE_FILE}`
-    ALIVE_DURATION=`python -c "print(${CURRENT_TIME} - ${ALIVE_TIME})"`
-
-    if [ ${ALIVE_DURATION} -gt 86400 ]; then
-      echo "$ALIVE_FILE older than 1 day."
-      return 1
-    fi
-  fi
-
-  return 0
-}
-
-do_heartbeat_v1() {
-    echo "heartbeat - toggle pins"
-    echo 1 > /sys/class/gpio/gpio${GPIO_EXPORT}/value
-    sleep 1
-    echo 0  > /sys/class/gpio/gpio${GPIO_EXPORT}/value
-    sleep 1
-}
-
-do_heartbeat_v2() {
-    echo "heartbeat - ping serial"
-    echo hello > $SERIAL
-}
-
-do_heartbeat() {
-    echo "heartbeat"
-
-    case "$1" in
-        v1)
-            do_heartbeat_v1
-            ;;
-        v2)
-            do_heartbeat_v2
-            ;;
-        *)
-            do_heartbeat_v1
-            do_heartbeat_v2
-            ;;
-    esac
-}
-
-while true; do
-    echo "refresh config"
-    wagman_version=$(cat /wagglerw/waggle/wagman_version || true)
-
-    for _ in $(seq 60); do
-        if should_heartbeat; then
-            do_heartbeat "$wagman_version"
-        else
-            echo "skipping heartbeat"
-        fi
-
-        sleep 1
-    done
-done
+case $(get_hbmode) in
+  always)
+    run_always_mode
+    ;;
+  wellness)
+    run_wellness_mode
+    ;;
+  *)
+    echo invalid run mode
+    exit 1
+    ;;
+esac
