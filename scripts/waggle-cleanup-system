@@ -6,8 +6,17 @@
 #           http://www.wa8.gl
 # ANL:waggle-license
 
-echo "cleaning up rabbitmq logs"
-rabbitmqctl rotate_logs && rm /var/log/rabbitmq/*.log.*
-
 echo "cleaning up journal logs"
 journalctl --vacuum-size=100M
+
+echo "cleaning up old rabbitmq logs"
+rm /var/log/rabbitmq/*.log.*
+
+echo "attempting to rotate rabbitmq log"
+if ! rabbitmqctl rotate_logs; then
+    systemctl restart rabbitmq-server
+    rabbitmqctl rotate_logs
+fi
+
+echo "cleaning up newly rotated rabbitmq logs"
+rm /var/log/rabbitmq/*.log.*
