@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # ANL:waggle-license
 #  This file is part of the Waggle Platform.  Please see the file
 #  LICENSE.waggle.txt for the legal details of the copyright and software
@@ -89,13 +89,12 @@ clear_deadman_trigger() {
   rm /run/waggle_deadman_trigger 2> /dev/null
 }
 
-# allow for ~4h without deadman trigger reset
 HBCOUNTER_INIT=14400
 
 run_wellness_mode() {
   echo "running in wellness mode"
 
-  hbcounter=$HBCOUNTER_INIT
+  hbcounter=0
 
   while true; do  
     if clear_deadman_trigger; then
@@ -103,11 +102,12 @@ run_wellness_mode() {
       hbcounter=$HBCOUNTER_INIT
     fi
 
-    echo "${hbcounter} heartbeats left"
-
     if [ $hbcounter -gt 0 ]; then
       let hbcounter-=1
+      echo "${hbcounter} heartbeats left"
       do_heartbeat
+    else
+      echo "no heartbeats left"
     fi
     
     sleep 1
@@ -152,16 +152,8 @@ else
 fi
 
 echo "Activating GPIO pin ${PIN} with export number ${GPIO_EXPORT}."
-
-if [ ! -d /sys/class/gpio/gpio${GPIO_EXPORT} ] ; then
-  set -x
-  echo ${GPIO_EXPORT} > /sys/class/gpio/export
-  set +x
-fi
-
-set -x
+echo ${GPIO_EXPORT} > /sys/class/gpio/export
 echo "out" > /sys/class/gpio/gpio${GPIO_EXPORT}/direction
-set +x
 
 case $(get_hbmode) in
   always)
