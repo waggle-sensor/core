@@ -94,7 +94,7 @@ HBCOUNTER_INIT=14400
 run_wellness_mode() {
   echo "running in wellness mode"
 
-  hbcounter=0
+  hbcounter=$HBCOUNTER_INIT
 
   while true; do  
     if clear_deadman_trigger; then
